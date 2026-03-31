@@ -94,6 +94,16 @@ async def update_state(update: StateUpdate):
     await broadcast_state()
     return {"message": "State updated"}
 
+@app.post("/api/execute")
+async def execute_program():
+    state.status = "executing"
+    state.feedback = "Robot is starting mission..."
+    state.path = []
+    # Reset robot to start position for the run
+    state.robot_pos = state.start_pos.copy()
+    await broadcast_state()
+    return {"message": "Execution started"}
+
 if __name__ == "__main__":
     print("Starting WebSocket server on http://127.0.0.1:8000")
     uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)

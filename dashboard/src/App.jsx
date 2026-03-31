@@ -14,6 +14,20 @@ function App() {
     obstacles: [],
     path: []
   });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRun = async () => {
+    if (gameState.commands.length === 0 || gameState.status === 'executing') return;
+    setIsLoading(true);
+    try {
+      await fetch('http://127.0.0.1:8000/api/execute', { method: 'POST' });
+    } catch (e) {
+      console.error("Failed to trigger execution:", e);
+    } finally {
+      // Keep loading for a moment to feel the click
+      setTimeout(() => setIsLoading(false), 800);
+    }
+  };
 
   useEffect(() => {
     const connectWs = () => {
@@ -89,6 +103,15 @@ function App() {
               {gameState.feedback}
             </div>
           </div>
+
+          <button 
+            className={`run-button ${isLoading ? 'loading' : ''}`}
+            disabled={gameState.commands.length === 0 || gameState.status === 'executing'}
+            onClick={handleRun}
+          >
+            {isLoading ? <div className="spinner"></div> : <Zap size={24} fill="currentColor" />}
+            <span>{isLoading ? 'Starting...' : 'Run Program'}</span>
+          </button>
         </div>
 
         <div className="panel">
