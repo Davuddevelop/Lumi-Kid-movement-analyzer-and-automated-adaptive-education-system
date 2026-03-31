@@ -1,0 +1,47 @@
+{
+  "missions": [
+    {
+      "id": "m1_obstacle_avoidance",
+      "name": "Obstacle Avoidance",
+      "description": "Oh no! There's a fallen tree in the road. Find a safe route around it to reach the finish line.",
+      "learning_objective": "Teaches sequential navigation and the concept of turning to avoid single obstacles.",
+      "grid_size": { "width": 8, "height": 8 },
+      "start": { "x": 1, "y": 4, "direction": "EAST" },
+      "goal": { "x": 6, "y": 4 },
+      "obstacles": [
+        {"x": 3, "y": 4},
+        {"x": 4, "y": 4}
+      ],
+      "tools_allowed": ["forward", "turn_right", "turn_left"]
+    },
+    {
+      "id": "m2_maze_escape",
+      "name": "Maze Escape",
+      "description": "You are trapped in a twisted labyrinth. Plan your moves carefully to construct a path to the exit!",
+      "learning_objective": "Teaches complex spatial reasoning and multi-step algorithmic planning.",
+      "grid_size": { "width": 10, "height": 10 },
+      "start": { "x": 0, "y": 1, "direction": "SOUTH" },
+      "goal": { "x": 9, "y": 8 },
+      "obstacles": [
+        {"x": 1, "y": 1}, {"x": 1, "y": 2}, {"x": 1, "y": 3},
+        {"x": 3, "y": 5}, {"x": 4, "y": 5}, {"x": 5, "y": 5},
+        {"x": 7, "y": 6}, {"x": 7, "y": 7}, {"x": 7, "y": 8}
+      ],
+      "tools_allowed": ["forward", "turn_right", "turn_left"]
+    },
+    {
+      "id": "m3_delivery_route",
+      "name": "Delivery Route",
+      "description": "The mail needs to be delivered to a series of houses along a very repetivive road. Can you find the lazy way to do it?",
+      "learning_objective": "Teaches algorithmic efficiency and repeating patterns using the 'Loop' function.",
+      "grid_size": { "width": 12, "height": 6 },
+      "start": { "x": 1, "y": 1, "direction": "EAST" },
+      "goal": { "x": 10, "y": 1 },
+      "obstacles": [
+        {"x": 0, "y": 2}, {"x": 2, "y": 2}, {"x": 4, "y": 2}, {"x": 6, "y": 2}, {"x": 8, "y": 2}
+      ],
+      "tools_allowed": ["forward", "turn_right", "turn_left", "loop_start", "loop_end"],
+      "expected_best_practice": ["loop_start", "loop_end"]
+    }
+  ]
+}
