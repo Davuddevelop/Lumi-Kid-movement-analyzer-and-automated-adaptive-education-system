@@ -75,6 +75,15 @@ function App() {
         </span>
       </div>
 
+      <div className={`assistant-bubble state-${gameState.status}`} key={gameState.feedback}>
+        <div className="assistant-avatar">
+          <Bot size={28} strokeWidth={2.5} />
+        </div>
+        <div className="speech-bubble">
+          {gameState.feedback}
+        </div>
+      </div>
+
       <div className="main-content">
         <div className="panel flex-col" style={{overflowX: 'hidden'}}>
           <h2><Zap size={24} color="#f59e0b" /> Scanner Feed</h2>
@@ -94,16 +103,6 @@ function App() {
 
           <hr style={{width: '100%', margin: '20px 0', borderColor: '#e2e8f0'}}/>
           
-          <div className={`feedback-panel panel state-${gameState.status}`} style={{padding: '20px'}}>
-            <h2>
-              {gameState.status === 'error' || gameState.status === 'fail' ? <AlertTriangle size={24} color="#dc2626" /> : <CheckCircle size={24} color="#16a34a" />} 
-              Let's Go!
-            </h2>
-            <div className="feedback-content" key={gameState.feedback}>
-              {gameState.feedback}
-            </div>
-          </div>
-
           <button 
             className={`run-button ${isLoading ? 'loading' : ''}`}
             disabled={gameState.commands.length === 0 || gameState.status === 'executing'}

@@ -306,36 +306,52 @@ h2 {
   animation: jump-shake 0.5s infinite;
 }
 
-/* Feedback Card */
-.feedback-panel {
-  background: linear-gradient(135deg, #fffbeb, #fef3c7);
-  border: 2px solid #fde68a;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.feedback-panel.state-error, .feedback-panel.state-fail {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
-  border-color: #fca5a5;
-}
-.feedback-panel.state-success {
-  background: linear-gradient(135deg, #f0fdf4, #dcfce3);
-  border-color: #86efac;
-}
-
-.feedback-content {
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: #92400e;
-  line-height: 1.4;
-  flex-grow: 1;
+/* Assistant Feedback Speech Bubble */
+.assistant-bubble {
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  animation: slideUp 0.4s ease-out;
+  gap: 15px;
+  margin: 0 auto 30px;
+  max-width: 600px;
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.state-error .feedback-content, .state-fail .feedback-content { color: #991b1b; }
-.state-success .feedback-content { color: #166534; }
+
+.assistant-avatar {
+  background: #6366f1;
+  color: white;
+  padding: 12px;
+  border-radius: 50%;
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.5s ease;
+}
+
+.speech-bubble {
+  background: white;
+  padding: 15px 25px;
+  border-radius: 24px 24px 24px 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  border: 2px solid #f1f5f9;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #334155;
+  position: relative;
+  line-height: 1.4;
+  transition: all 0.5s ease;
+  text-align: left;
+}
+
+.assistant-bubble.state-success .assistant-avatar { background: #10b981; transform: scale(1.1); }
+.assistant-bubble.state-success .speech-bubble { border-color: #86efac; background: #f0fdf4; color: #166534; }
+
+.assistant-bubble.state-error .assistant-avatar, 
+.assistant-bubble.state-fail .assistant-avatar { background: #ef4444; animation: shake 0.5s infinite; }
+.assistant-bubble.state-error .speech-bubble, 
+.assistant-bubble.state-fail .speech-bubble { border-color: #fca5a5; background: #fef2f2; color: #991b1b; }
 
 
 /* Animations */
