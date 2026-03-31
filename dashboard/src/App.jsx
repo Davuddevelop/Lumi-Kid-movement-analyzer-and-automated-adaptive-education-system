@@ -62,7 +62,7 @@ function App() {
         <div className="robot-avatar">
           <Bot size={54} className={`animate-${gameState.status}`} />
         </div>
-        <h1>Lumi Robot Missions</h1>
+        <h1>Lumi</h1>
       </header>
       
       <div className={`status-badge status-${gameState.status}`}>
