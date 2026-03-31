@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
 import uvicorn
+from suggestion_engine import get_suggestion
 
 app = FastAPI()
 
@@ -19,6 +20,7 @@ class RobotState:
         self.commands = []
         self.status = "idle"  # idle, executing, success, error
         self.feedback = "Waiting for blocks..."
+        self.suggestion = ""
         
         # Grid state defaults
         self.grid_size = {"width": 8, "height": 8}
@@ -33,6 +35,7 @@ class RobotState:
             "commands": self.commands,
             "status": self.status,
             "feedback": self.feedback,
+            "suggestion": self.suggestion,
             "grid_size": self.grid_size,
             "start_pos": self.start_pos,
             "robot_pos": self.robot_pos,
@@ -90,6 +93,15 @@ async def update_state(update: StateUpdate):
     if update.goal is not None: state.goal = update.goal
     if update.obstacles is not None: state.obstacles = update.obstacles
     if update.path is not None: state.path = update.path
+    
+    # Update suggestions
+    try:
+        grid_w = state.grid_size.get('width', 8) if isinstance(state.grid_size, dict) else 8
+        state.suggestion = get_suggestion(state.status, state.path, state.commands, grid_w)
+    except Exception as e:
+        print(f"Suggestion Error: {e}")
+        state.suggestion = ""
+    
         
     await broadcast_state()
     return {"message": "State updated"}

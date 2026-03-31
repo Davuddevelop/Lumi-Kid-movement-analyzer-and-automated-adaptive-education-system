@@ -59,8 +59,11 @@ function App() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <div className="robot-avatar">
-          <Bot size={54} className={`animate-${gameState.status}`} />
+        <div className={`robot-avatar state-${gameState.status}`}>
+          {gameState.status === 'success' ? <Zap size={54} fill="currentColor" /> : 
+           gameState.status === 'executing' ? <Bot size={54} className="animate-spin" /> :
+           (gameState.status === 'error' || gameState.status === 'fail') ? <AlertTriangle size={54} /> :
+           <Bot size={54} className="animate-idle" />}
         </div>
         <h1>Lumi</h1>
       </header>
@@ -75,12 +78,20 @@ function App() {
         </span>
       </div>
 
-      <div className={`assistant-bubble state-${gameState.status}`} key={gameState.feedback}>
+      <div className={`assistant-bubble state-${gameState.status}`} key={gameState.suggestion || gameState.feedback}>
         <div className="assistant-avatar">
-          <Bot size={28} strokeWidth={2.5} />
+          {gameState.status === 'success' ? <CheckCircle size={28} strokeWidth={3} /> : 
+           (gameState.status === 'error' || gameState.status === 'fail') ? <AlertTriangle size={28} strokeWidth={3} /> :
+           <Bot size={28} strokeWidth={2.5} />}
         </div>
         <div className="speech-bubble">
-          {gameState.feedback}
+          {gameState.suggestion ? (
+            <div className="suggestion-text animate-pop">
+              <span className="suggestion-bulb">💡</span> {gameState.suggestion}
+            </div>
+          ) : (
+            <div className="feedback-text">{gameState.feedback}</div>
+          )}
         </div>
       </div>
 
