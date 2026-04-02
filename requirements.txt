@@ -1,0 +1,21 @@
+# Lumi - Educational Coding Platform
+# Python dependencies
+
+# Web server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# Computer vision (for block color detection)
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# HTTP client (for API communication)
+requests>=2.31.0
+
+# Hardware (for Arduino robot control)
+pyserial>=3.5
+
+# Development (optional)
+# pytest>=7.4.0
+# httpx>=0.25.0  # for testing async endpoints

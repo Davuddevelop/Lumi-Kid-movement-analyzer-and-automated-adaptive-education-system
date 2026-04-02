@@ -62,7 +62,47 @@ class MissionLogger:
                (commands[i] == 'turn_left' and commands[i+1] == 'turn_right'):
                 return "redundant_turns"
         return "crashed_into_obstacle"
-        
+
+    def log_interaction(self, text, analysis):
+        """Logs a verbal interaction between the kid and Lumi."""
+        if not self.current_session:
+            return
+            
+        if "interactions" not in self.current_session:
+            self.current_session["interactions"] = []
+            
+        interaction = {
+            "timestamp": datetime.now().isoformat(),
+            "speech": text,
+            "analysis": analysis
+        }
+        self.current_session["interactions"].append(interaction)
+        # Periodic save if interaction occurs
+        self._temp_save()
+
+    def _temp_save(self):
+        """Quick save without closing session."""
+        if not self.current_session: return
+        try:
+            with open(self.log_file, 'r') as f:
+                data = json.load(f)
+        except:
+            data = {"sessions": []}
+            
+        # Update current session in data if it exists, else append
+        found = False
+        for i, s in enumerate(data.get("sessions", [])):
+            if s.get("start_time") == self.current_session["start_time"]:
+                data["sessions"][i] = self.current_session
+                found = True
+                break
+        if not found:
+            # We don't want to double append, but for live logging we might
+            pass 
+            
+        with open(self.log_file, 'w') as f:
+            json.dump(data, f, indent=4)
+
     def save_session(self):
         """Saves all the retry attempts to the central JSON database."""
         if not self.current_session: return

@@ -1,13 +1,18 @@
 import cv2
 import numpy as np
+import requests
+import time
 
-# Map colors to specific commands
-COLOR_TO_COMMAND = {
-    'green': 'forward',
-    'blue': 'turn_right',
-    'yellow': 'turn_left',
-    'red': 'loop'
-}
+from blocks import COLOR_TO_COMMAND
+
+SERVER_URL = "http://127.0.0.1:8000/api/update"
+
+def send_to_server(commands):
+    """Send detected commands to the server."""
+    try:
+        requests.post(SERVER_URL, json={"commands": commands}, timeout=1)
+    except requests.exceptions.RequestException as e:
+        print(f"Server connection failed: {e}")
 
 # HSV color ranges for robust detection
 # Note: Red is split into two ranges because it wraps around the HSV hue circle (0-180)
@@ -17,7 +22,9 @@ HSV_BOUNDARIES = {
     'blue':   (np.array([90, 100, 100]), np.array([130, 255, 255])),
     'yellow': (np.array([20, 100, 100]), np.array([35, 255, 255])),
     'red1':   (np.array([0, 100, 100]),  np.array([10, 255, 255])),
-    'red2':   (np.array([160, 100, 100]), np.array([180, 255, 255]))
+    'red2':   (np.array([160, 100, 100]), np.array([180, 255, 255])),
+    'orange': (np.array([10, 100, 100]), np.array([20, 255, 255])),   # loop_start
+    'purple': (np.array([130, 100, 100]), np.array([160, 255, 255]))  # loop_end
 }
 
 def detect_and_sort_blocks(frame, min_area=500):
@@ -84,6 +91,10 @@ def main():
     print("Place colored blocks in front of the camera in a horizontal line.")
     print("Press 'q' to quit.")
 
+    last_commands = []
+    last_send_time = 0
+    DEBOUNCE_DELAY = 0.3  # Only send updates every 300ms or when commands change
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -93,16 +104,29 @@ def main():
         # Run our detection algorithm
         commands, blocks = detect_and_sort_blocks(frame, min_area=800)
 
+        # Send to server if commands changed or debounce time passed
+        current_time = time.time()
+        if commands != last_commands or (current_time - last_send_time) > DEBOUNCE_DELAY:
+            if commands != last_commands:
+                print(f"Detected: {commands}")
+            send_to_server(commands)
+            last_commands = commands.copy()
+            last_send_time = current_time
+
         # Visualization
         for block in blocks:
             x, y, w, h = block['bbox']
             
-            # Select display color
-            bgr_color = (255, 255, 255)
-            if block['color'] == 'green':  bgr_color = (0, 255, 0)
-            elif block['color'] == 'blue': bgr_color = (255, 0, 0) # OpenCV is BGR
-            elif block['color'] == 'yellow': bgr_color = (0, 255, 255)
-            elif block['color'] == 'red':  bgr_color = (0, 0, 255)
+            # Select display color (OpenCV uses BGR)
+            bgr_colors = {
+                'green': (0, 255, 0),
+                'blue': (255, 0, 0),
+                'yellow': (0, 255, 255),
+                'red': (0, 0, 255),
+                'orange': (0, 165, 255),
+                'purple': (128, 0, 128)
+            }
+            bgr_color = bgr_colors.get(block['color'], (255, 255, 255))
 
             # Draw rectangle around block
             cv2.rectangle(frame, (x, y), (x + w, y + h), bgr_color, 3)
