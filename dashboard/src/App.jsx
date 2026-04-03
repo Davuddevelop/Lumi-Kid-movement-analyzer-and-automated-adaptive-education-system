@@ -1,45 +1,51 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowUp, CornerDownRight, CornerDownLeft, Repeat, Bot, CheckCircle, Zap, Map, AlertTriangle, RotateCcw, PlayCircle, StopCircle, Mic, MicOff } from 'lucide-react';
+import {
+  ArrowUp, RotateCw, RotateCcw, Repeat,
+  Zap, Map, PlayCircle, Mic, MicOff,
+  Star, Settings, RefreshCw, Lightbulb, SkipForward
+} from 'lucide-react';
 import GridBoard from './components/GridBoard';
+import LevelSelect from './components/LevelSelect';
 
 function App() {
+  const [view, setView] = useState('game');
+  const [currentLevel, setCurrentLevel] = useState(null);
+  const [personality, setPersonality] = useState('coach');
+  const [isListening, setIsListening] = useState(false);
   const [gameState, setGameState] = useState({
     commands: [],
     status: 'idle',
-    feedback: 'Connecting to robot...',
+    feedback: 'Hi! Let\'s play! 🚀',
     grid_size: { width: 8, height: 8 },
     robot_pos: { x: 1, y: 4 },
     start_pos: { x: 1, y: 4 },
     goal: { x: 6, y: 4 },
     obstacles: [],
-    path: []
+    path: [],
+    vitals: { joy: 85, focus: 40 }
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
 
   const speak = useCallback((text) => {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Attempt to find a "girl" / female voice
-    const voices = window.speechSynthesis.getVoices();
-    const femaleVoice = voices.find(v => 
-      v.name.toLowerCase().includes('female') || 
-      v.name.toLowerCase().includes('samantha') || 
-      v.name.toLowerCase().includes('zira') || 
-      v.name.toLowerCase().includes('maria') ||
-      v.name.toLowerCase().includes('google us english')
-    );
-    
-    if (femaleVoice) {
-      utterance.voice = femaleVoice;
-    }
-    
-    utterance.pitch = 1.4; // Higher pitch for a "girl" robot feel
+    utterance.pitch = 1.4;
     utterance.rate = 1.0;
     window.speechSynthesis.speak(utterance);
   }, []);
+
+  const handleSelectLevel = async (level) => {
+    setCurrentLevel(level);
+    try {
+      await fetch('http://127.0.0.1:8000/api/levels/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level_id: level.level_id })
+      });
+    } catch (e) { console.error(e); }
+    setView('game');
+  };
 
   const handleRun = async () => {
     if (gameState.commands.length === 0 || gameState.status === 'executing') return;
@@ -47,83 +53,39 @@ function App() {
     try {
       await fetch('http://127.0.0.1:8000/api/execute', { method: 'POST' });
     } catch (e) {
-      console.error("Failed to trigger execution:", e);
+      console.error(e);
     } finally {
       setTimeout(() => setIsLoading(false), 800);
     }
   };
 
-  const handleNextDemo = async () => {
-    if (gameState.status === 'executing') return;
+  const handleReset = async () => {
+    try {
+      await fetch('http://127.0.0.1:8000/api/reset', { method: 'POST' });
+    } catch (e) { console.error(e); }
+  };
+
+  const handleLoadDemo = async () => {
     try {
       await fetch('http://127.0.0.1:8000/api/demo', { method: 'POST' });
-    } catch (e) {
-      console.error("Failed to load demo:", e);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  const handleAnswerButton = async (buttonId) => {
+  const handleHint = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ button_id: buttonId })
-      });
-      const data = await response.json();
-      if (data.speech) {
-        speak(data.speech);
-      }
-    } catch (e) {
-      console.error("Answer failed:", e);
-    }
-  };
-
-  const handleHintRequest = async () => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/hint', { method: 'POST' });
-      const data = await response.json();
-      if (data.question) {
-        speak(data.question.text);
-      }
-    } catch (e) {
-      console.error("Hint request failed:", e);
-    }
-  };
-
-  const handleHintResponse = async (wantsHint) => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/hint/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wants_hint: wantsHint })
-      });
-      const data = await response.json();
-      if (data.speech) {
-        speak(data.speech);
-      }
-    } catch (e) {
-      console.error("Hint response failed:", e);
-    }
+      await fetch('http://127.0.0.1:8000/api/hint', { method: 'POST' });
+    } catch (e) { console.error(e); }
   };
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition not supported in this browser.");
-      return;
-    }
-
+    if (!SpeechRecognition) return;
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
-    recognition.interimResults = false;
-
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
-
     recognition.onresult = async (event) => {
       const transcript = event.results[0][0].transcript;
-      console.log("Transcribed:", transcript);
-
       try {
         const response = await fetch('http://127.0.0.1:8000/api/voice/interact', {
           method: 'POST',
@@ -131,199 +93,273 @@ function App() {
           body: JSON.stringify({ text: transcript })
         });
         const data = await response.json();
-        if (data.speech) {
-          speak(data.speech);
-        }
-      } catch (e) {
-        console.error("Voice interaction failed:", e);
-      }
+        if (data.speech) speak(data.speech);
+      } catch (e) { console.error(e); }
     };
-
     recognition.start();
   };
 
   useEffect(() => {
     const connectWs = () => {
       const ws = new WebSocket('ws://127.0.0.1:8000/ws');
-      ws.onopen = () => setGameState(prev => ({...prev, feedback: 'Connected! Place some blocks.'}));
       ws.onmessage = (event) => {
-        try { 
+        try {
           const newState = JSON.parse(event.data);
-          setGameState(newState);
-          // If Lumi has new feedback, say it!
+          setGameState(prev => ({...prev, ...newState}));
           if (newState.feedback && newState.status !== 'executing') {
             speak(newState.feedback);
           }
-        } 
-        catch (e) { console.error(e); }
+        } catch (e) { console.error(e); }
       };
-      ws.onclose = () => {
-        setGameState(prev => ({...prev, feedback: 'Disconnected. Reconnecting...'}));
-        setTimeout(connectWs, 2000);
-      };
+      ws.onclose = () => setTimeout(connectWs, 2000);
     };
     connectWs();
   }, [speak]);
 
+  const changePersonality = async (p) => {
+    setPersonality(p);
+    try {
+      await fetch('http://127.0.0.1:8000/api/personality', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: p })
+      });
+    } catch (e) { console.error(e); }
+  };
+
   const getCommandIcon = (cmd) => {
     switch(cmd) {
-      case 'forward': return <ArrowUp size={20} strokeWidth={3} />;
-      case 'turn_right': return <CornerDownRight size={20} strokeWidth={3} />;
-      case 'turn_left': return <CornerDownLeft size={20} strokeWidth={3} />;
-      case 'loop': return <Repeat size={20} strokeWidth={3} />;
-      case 'loop_start': return <PlayCircle size={20} strokeWidth={3} />;
-      case 'loop_end': return <StopCircle size={20} strokeWidth={3} />;
+      case 'forward': return <ArrowUp size={22} strokeWidth={3} />;
+      case 'turn_right': return <RotateCw size={22} strokeWidth={3} />;
+      case 'turn_left': return <RotateCcw size={22} strokeWidth={3} />;
+      case 'loop': return <Repeat size={22} strokeWidth={3} />;
       default: return null;
     }
   };
 
+  const getStatusBadge = () => {
+    switch(gameState.status) {
+      case 'success':
+        return <span className="status-badge status-success">SUCCESS!</span>;
+      case 'error':
+      case 'fail':
+        return <span className="status-badge status-error">TRY AGAIN</span>;
+      case 'executing':
+        return <span className="status-badge status-executing">RUNNING...</span>;
+      default:
+        return null;
+    }
+  };
+
+  if (view === 'levels') {
+    return <LevelSelect onSelectLevel={handleSelectLevel} onBack={() => setView('game')} />;
+  }
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <div className={`robot-avatar state-${gameState.status}`}>
-          {gameState.status === 'success' ? <Zap size={54} fill="currentColor" /> : 
-           gameState.status === 'executing' ? <Bot size={54} className="animate-spin" /> :
-           (gameState.status === 'error' || gameState.status === 'fail') ? <AlertTriangle size={54} /> :
-           <Bot size={54} className="animate-idle" />}
+      {/* Top Navigation */}
+      <nav className="dashboard-header">
+        <div className="header-left">
+          <div className="logo-icon"><Zap size={22} color="white" fill="white" /></div>
+          <h1>Lumi <span>Junior</span> Command Center</h1>
         </div>
-        <h1>Lumi</h1>
-      </header>
-      
-      <div className={`status-badge status-${gameState.status}`}>
-        <div className="status-dot"></div>
-        <span className="status-text animate-fade">
-          {gameState.status === 'idle' ? 'System Idle' 
-            : gameState.status === 'executing' ? 'Robot Executing...' 
-            : (gameState.status === 'error' || gameState.status === 'fail') ? 'CRASH DETECTED!'
-            : 'Goal Success!'}
-        </span>
-      </div>
 
-      <div className={`assistant-bubble state-${gameState.status}`} key={gameState.suggestion || gameState.feedback}>
-        <div className="assistant-avatar">
-          {gameState.status === 'success' ? <CheckCircle size={28} strokeWidth={3} /> : 
-           (gameState.status === 'error' || gameState.status === 'fail') ? <AlertTriangle size={28} strokeWidth={3} /> :
-           <Bot size={28} strokeWidth={2.5} />}
-        </div>
-        <div className="speech-bubble">
-          {gameState.suggestion ? (
-            <div className="suggestion-text animate-pop">
-              <span className="suggestion-bulb">💡</span> {gameState.suggestion}
-            </div>
-          ) : (
-            <div className="feedback-text">{gameState.feedback}</div>
-          )}
-
-          {gameState.question && gameState.question.id === 'offer_hint' ? (
-            <div className="answer-buttons hint-buttons">
-              <button
-                className="answer-btn hint-yes"
-                onClick={() => handleHintResponse(true)}
-              >
-                Yes, help me!
-              </button>
-              <button
-                className="answer-btn hint-no"
-                onClick={() => handleHintResponse(false)}
-              >
-                No, I'll try again!
-              </button>
-            </div>
-          ) : gameState.question ? (
-            <div className="answer-buttons">
-              {gameState.question.answers.map((ans) => (
-                <button
-                  key={ans.id}
-                  className="answer-btn"
-                  onClick={() => handleAnswerButton(ans.id)}
-                >
-                  {ans.label}
-                </button>
-              ))}
-            </div>
-          ) : (gameState.status === 'error' || gameState.status === 'fail') && (
-            <div className="hint-offer">
-              <button className="hint-btn" onClick={handleHintRequest}>
-                Need a hint?
-              </button>
-            </div>
-          )}
-
+        <div className="personality-tabs">
           <button
-            className={`mic-button ${isListening ? 'listening' : ''}`}
-            onClick={startListening}
-            title="Talk to Lumi"
+            className={`personality-tab ${personality === 'coach' ? 'active' : ''}`}
+            onClick={() => changePersonality('coach')}
           >
-            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+            🥇 COACH
+          </button>
+          <button
+            className={`personality-tab ${personality === 'challenger' ? 'active' : ''}`}
+            onClick={() => changePersonality('challenger')}
+          >
+            🔥 CHALLENGER
+          </button>
+          <button
+            className={`personality-tab ${personality === 'friendly' ? 'active' : ''}`}
+            onClick={() => changePersonality('friendly')}
+          >
+            😊 BUDDY
           </button>
         </div>
-      </div>
 
-      <div className="main-content">
-        <div className="panel flex-col" style={{overflowX: 'hidden'}}>
-          <h2><Zap size={24} color="#f59e0b" /> Scanner Feed</h2>
-          
-          <div className="commands-container">
-            {gameState.commands.length === 0 ? (
-              <div className="empty-state">No blocks detected yet 🕵️‍♀️</div>
-            ) : (
-              gameState.commands.map((cmd, index) => (
-                <div key={index} className={`command-block cmd-${cmd}`} >
-                  <div className="cmd-icon-wrapper">{getCommandIcon(cmd)}</div>
-                  <span>{cmd === 'turn_right' ? 'Right' : cmd === 'turn_left' ? 'Left' : cmd.charAt(0).toUpperCase() + cmd.slice(1)}</span>
-                </div>
-              ))
-            )}
+        <div className="user-profile">
+          <div className="avatar-circle">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="user" />
           </div>
+          <Settings size={20} color="var(--text-muted)" className="settings-icon" />
+        </div>
+      </nav>
 
-          <hr style={{width: '100%', margin: '20px 0', borderColor: '#e2e8f0'}}/>
+      {/* Main 3-Column Layout */}
+      <main className="main-layout">
 
-          <div className="block-library">
-            <h3><Bot size={20} /> Block Library</h3>
-            <p className="library-hint">These are the physical blocks you can use!</p>
-            <div className="library-grid">
-              {gameState.available_blocks && Object.entries(gameState.available_blocks).map(([cmd, info]) => (
-                <div key={cmd} className="library-item" title={info.description}>
-                  <div className={`library-icon cmd-${cmd}`}>
-                    {getCommandIcon(cmd)}
-                  </div>
-                  <div className="library-info">
-                    <span className="library-name">{cmd === 'turn_right' ? 'Right' : cmd === 'turn_left' ? 'Left' : cmd.charAt(0).toUpperCase() + cmd.slice(1)}</span>
-                    <span className="library-desc">{info.description}</span>
-                  </div>
+        {/* Column 1: AI Hub & Status */}
+        <div className="layout-col-1">
+          <div className="glass-panel lumi-hub">
+            <div className="hub-avatar-sphere">
+              <img
+                src={`https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${gameState.sentiment || 'Lumi'}&backgroundColor=transparent`}
+                alt="lumi"
+              />
+              {gameState.feedback && (
+                <div className="speech-bubble">
+                  {gameState.feedback.length > 40
+                    ? gameState.feedback.substring(0, 40) + '...'
+                    : gameState.feedback}
+                </div>
+              )}
+            </div>
+            <div className="hub-label">
+              <h3>Lumi AI Hub</h3>
+              <p className="emotion-label">
+                {gameState.sentiment
+                  ? gameState.sentiment.charAt(0).toUpperCase() + gameState.sentiment.slice(1)
+                  : 'Curiosity'}
+                {gameState.sentiment === 'joy' ? ' 😊' :
+                 gameState.sentiment === 'frustration' ? ' 😟' :
+                 gameState.sentiment === 'curiosity' ? ' 🤔' : ' 😶'}
+              </p>
+            </div>
+
+            <div className="condensed-block-list">
+              {['forward', 'turn_right', 'turn_left', 'loop'].map((cmd) => (
+                <div key={cmd} className={`condensed-block ${gameState.commands.includes(cmd) ? 'active' : ''}`}>
+                  {getCommandIcon(cmd)}
+                  <span>{cmd.replace('_', ' ').charAt(0).toUpperCase() + cmd.replace('_', ' ').slice(1)}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <hr style={{width: '100%', margin: '20px 0', borderColor: '#e2e8f0'}}/>
-          
-          <div className="button-row">
-            <button
-              className={`run-button ${isLoading ? 'loading' : ''}`}
-              disabled={gameState.commands.length === 0 || gameState.status === 'executing'}
-              onClick={handleRun}
-            >
-              {isLoading ? <div className="spinner"></div> : <Zap size={24} fill="currentColor" />}
-              <span>{isLoading ? 'Starting...' : 'Run Program'}</span>
-            </button>
-            <button
-              className="demo-button"
-              disabled={gameState.status === 'executing'}
-              onClick={handleNextDemo}
-            >
-              <RotateCcw size={20} />
-              <span>Next Demo</span>
-            </button>
+          <div className="glass-panel magic-mic-panel" onClick={startListening}>
+            <div className="mic-icon-wrapper">
+              <div className="mic-wave-ring"></div>
+              {isListening && <div className="mic-wave-ring" style={{animationDelay: '0.8s'}}></div>}
+              <Mic size={48} color={isListening ? "var(--error)" : "var(--primary)"} strokeWidth={1.5} />
+            </div>
+            <h3>Magic Microphone</h3>
+            <p className="mic-hint">Tap to speak commands</p>
           </div>
         </div>
 
-        <div className="panel">
-          <h2><Map size={24} color="#6366f1" /> Live Mission Map</h2>
-          <GridBoard {...gameState} />
+        {/* Column 2: Mission Board */}
+        <div className="layout-col-2 mission-hub">
+          <div className="mission-header-info">
+            <h2>Mission: {currentLevel?.name || 'Nebula Dash'}</h2>
+            <p>Guide Lumi to the Golden Star while avoiding space rocks!</p>
+            {getStatusBadge()}
+          </div>
+
+          <div className="mission-grid-viewport">
+             <div className="stat-pills-container">
+                <div className="stat-pill">
+                  <Star size={16} fill="currentColor" />
+                  Level {gameState.current_level_id || 1}
+                </div>
+                <button className="stat-pill" onClick={() => setView('levels')}>
+                  <Map size={16} /> MAP
+                </button>
+             </div>
+
+             <div className="grid-board-content">
+                <GridBoard {...gameState} />
+             </div>
+
+             <button
+              className={`floating-mic-btn ${isListening ? 'listening' : ''}`}
+              onClick={startListening}
+             >
+                {isListening ? <MicOff size={24} /> : <Mic size={24} />}
+             </button>
+          </div>
         </div>
-      </div>
+
+        {/* Column 3: Feed & Vitals */}
+        <div className="layout-col-3">
+          <div className="glass-panel scanner-feed-panel">
+            <div className="panel-header">
+              <h4 className="panel-title">Scanner Feed</h4>
+              <div className="panel-actions">
+                <button className="action-btn" onClick={handleLoadDemo} title="Load Demo">
+                  <SkipForward size={18} />
+                </button>
+                <button className="action-btn" onClick={handleHint} title="Get Hint">
+                  <Lightbulb size={18} />
+                </button>
+                <button className="action-btn" onClick={handleReset} title="Reset">
+                  <RefreshCw size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="tactile-feed">
+              {gameState.commands.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">🔍</div>
+                  <span>Searching for LEGO blocks...</span>
+                  <button className="demo-btn" onClick={handleLoadDemo}>
+                    Load Demo Program
+                  </button>
+                </div>
+              ) : (
+                gameState.commands.map((cmd, idx) => (
+                  <div
+                    key={idx}
+                    className={`tactile-block block-${cmd} ${gameState.status === 'executing' && idx === 0 ? 'executing' : ''}`}
+                  >
+                    {getCommandIcon(cmd)}
+                    <span className="block-label">{cmd.replace('_', ' ').toUpperCase()}</span>
+                    {idx === 0 && gameState.status === 'executing' && <span className="exec-sticker">EXEC</span>}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="button-row">
+              <button
+                className="run-button run-button-full"
+                onClick={handleRun}
+                disabled={isLoading || gameState.commands.length === 0 || gameState.status === 'executing'}
+              >
+                {isLoading || gameState.status === 'executing'
+                  ? <><RefreshCw className="animate-spin" size={22} /> EXECUTING...</>
+                  : <><PlayCircle size={22} fill="currentColor" /> RUN PROGRAM</>
+                }
+              </button>
+            </div>
+          </div>
+
+          <div className="glass-panel vitals-panel">
+            <h4 className="panel-title">Learning Vitals</h4>
+            <div className="vitals-stats">
+              <div className="vital-row">
+                <div className="vital-icon-box">❤️</div>
+                <div className="vital-bar-container">
+                  <span className="vital-label">JOY</span>
+                  <div className="gauge-track">
+                    <div className="gauge-fill gauge-joy" style={{width: `${gameState.vitals?.joy || 85}%`}}></div>
+                  </div>
+                </div>
+                <span className="vital-value">{gameState.vitals?.joy || 85}%</span>
+              </div>
+              <div className="vital-row">
+                <div className="vital-icon-box">🔥</div>
+                <div className="vital-bar-container">
+                  <span className="vital-label">FOCUS</span>
+                  <div className="gauge-track">
+                    <div className="gauge-fill gauge-focus" style={{width: `${gameState.vitals?.focus || 40}%`}}></div>
+                  </div>
+                </div>
+                <span className="vital-value">{gameState.vitals?.focus || 40}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
     </div>
   );
 }

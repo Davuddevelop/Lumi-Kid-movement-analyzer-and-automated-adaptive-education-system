@@ -1,0 +1,1216 @@
+[
+  {
+    "level_id": 1,
+    "name": "First Steps",
+    "difficulty": "easy",
+    "grid_size": [
+      5,
+      5
+    ],
+    "start": [
+      0,
+      2
+    ],
+    "goal": [
+      3,
+      2
+    ],
+    "obstacles": [],
+    "allowed_commands": [
+      "forward"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 3,
+    "description": "Move the robot to the flag! Just go forward.",
+    "learning_goal": "Learn that 'forward' moves the robot one step",
+    "hints": [
+      "The robot moves one step with each 'forward' command",
+      "Count the squares between you and the goal",
+      "You need 3 forward commands"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 2,
+    "name": "One More Step",
+    "difficulty": "easy",
+    "grid_size": [
+      5,
+      5
+    ],
+    "start": [
+      0,
+      2
+    ],
+    "goal": [
+      4,
+      2
+    ],
+    "obstacles": [],
+    "allowed_commands": [
+      "forward"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 4,
+    "description": "The goal is a bit further now. Keep going!",
+    "learning_goal": "Practice counting steps accurately",
+    "hints": [
+      "Count carefully - how many squares?",
+      "One forward = one square",
+      "You need exactly 4 forwards"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 3,
+    "name": "Turn Right",
+    "difficulty": "easy",
+    "grid_size": [
+      5,
+      5
+    ],
+    "start": [
+      1,
+      2
+    ],
+    "goal": [
+      1,
+      4
+    ],
+    "obstacles": [],
+    "allowed_commands": [
+      "forward",
+      "turn_right"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 3,
+    "description": "The goal is below you. Learn to turn!",
+    "learning_goal": "Introduce turning - the robot can change direction",
+    "hints": [
+      "The robot starts facing right (East)",
+      "Turn right to face down (South)",
+      "Then move forward to the goal"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 4,
+    "name": "Turn Left",
+    "difficulty": "easy",
+    "grid_size": [
+      5,
+      5
+    ],
+    "start": [
+      2,
+      2
+    ],
+    "goal": [
+      2,
+      0
+    ],
+    "obstacles": [],
+    "allowed_commands": [
+      "forward",
+      "turn_left"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 3,
+    "description": "Now try turning left to reach the goal above!",
+    "learning_goal": "Learn left turns complement right turns",
+    "hints": [
+      "Turn left to face up (North)",
+      "The goal is 2 squares above you",
+      "Turn once, then go forward twice"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 5,
+    "name": "L-Shape Path",
+    "difficulty": "easy",
+    "grid_size": [
+      5,
+      5
+    ],
+    "start": [
+      0,
+      0
+    ],
+    "goal": [
+      2,
+      2
+    ],
+    "obstacles": [],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 5,
+    "description": "Combine movement and turning to make an L-shape!",
+    "learning_goal": "Combine forward and turns in a sequence",
+    "hints": [
+      "Go forward first, then turn, then forward again",
+      "Think about the shape of your path",
+      "Forward 2, turn right, forward 2"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 6,
+    "name": "First Obstacle",
+    "difficulty": "easy",
+    "grid_size": [
+      5,
+      5
+    ],
+    "start": [
+      0,
+      2
+    ],
+    "goal": [
+      4,
+      2
+    ],
+    "obstacles": [
+      [
+        2,
+        2
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 6,
+    "description": "There's a rock in the way! Go around it.",
+    "learning_goal": "Learn to navigate around a single obstacle",
+    "hints": [
+      "You can't go through the rock!",
+      "Go up or down to get around it",
+      "Turn, go forward, turn back, continue"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 7,
+    "name": "Narrow Passage",
+    "difficulty": "medium",
+    "grid_size": [
+      6,
+      6
+    ],
+    "start": [
+      0,
+      2
+    ],
+    "goal": [
+      5,
+      2
+    ],
+    "obstacles": [
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        3
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 9,
+    "description": "Find the gap in the wall of rocks!",
+    "learning_goal": "Identify and navigate through openings",
+    "hints": [
+      "Look for where there's no rock",
+      "The gap is at the top",
+      "Go up, across, then back down"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 8,
+    "name": "Zigzag Path",
+    "difficulty": "medium",
+    "grid_size": [
+      6,
+      6
+    ],
+    "start": [
+      0,
+      0
+    ],
+    "goal": [
+      5,
+      5
+    ],
+    "obstacles": [
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        4,
+        4
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 14,
+    "description": "Navigate the diagonal obstacles!",
+    "learning_goal": "Plan complex paths around multiple obstacles",
+    "hints": [
+      "The rocks form a diagonal line",
+      "Stay below or above the line",
+      "Zigzag around each rock"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 9,
+    "name": "The Corridor",
+    "difficulty": "medium",
+    "grid_size": [
+      7,
+      5
+    ],
+    "start": [
+      0,
+      2
+    ],
+    "goal": [
+      6,
+      2
+    ],
+    "obstacles": [
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        3,
+        0
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        5,
+        0
+      ],
+      [
+        5,
+        1
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        5,
+        4
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 10,
+    "description": "Find your way through the winding corridor!",
+    "learning_goal": "Navigate through constrained spaces",
+    "hints": [
+      "The path weaves through the walls",
+      "Only one way through at each wall",
+      "Keep moving forward through the gaps"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 10,
+    "name": "Efficiency Challenge",
+    "difficulty": "medium",
+    "grid_size": [
+      6,
+      6
+    ],
+    "start": [
+      0,
+      0
+    ],
+    "goal": [
+      5,
+      0
+    ],
+    "obstacles": [
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        3,
+        1
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left"
+    ],
+    "max_steps": 12,
+    "time_limit": null,
+    "optimal_solution": 9,
+    "description": "Reach the goal in 12 steps or less!",
+    "learning_goal": "Learn to optimize your solution",
+    "hints": [
+      "Don't waste moves!",
+      "Find the shortest path around",
+      "Every extra turn costs a step"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 11,
+    "name": "Repeat After Me",
+    "difficulty": "medium",
+    "grid_size": [
+      8,
+      5
+    ],
+    "start": [
+      0,
+      2
+    ],
+    "goal": [
+      7,
+      2
+    ],
+    "obstacles": [],
+    "allowed_commands": [
+      "forward",
+      "loop"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 4,
+    "description": "Going far? Use the loop block to repeat!",
+    "learning_goal": "Introduce the loop command for repetition",
+    "hints": [
+      "Loop repeats the previous command",
+      "forward + loop = 3 forwards",
+      "Use fewer blocks with loops!"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 12,
+    "name": "Loop Master",
+    "difficulty": "medium",
+    "grid_size": [
+      8,
+      8
+    ],
+    "start": [
+      0,
+      0
+    ],
+    "goal": [
+      0,
+      7
+    ],
+    "obstacles": [],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left",
+      "loop"
+    ],
+    "max_steps": 6,
+    "time_limit": null,
+    "optimal_solution": 4,
+    "description": "Reach the bottom with only 6 commands!",
+    "learning_goal": "Loops are essential for efficiency",
+    "hints": [
+      "You MUST use loops to solve this",
+      "Turn right, then use forward + loops",
+      "One loop = 2 extra of the same move"
+    ],
+    "requires_loop": true
+  },
+  {
+    "level_id": 13,
+    "name": "Spiral Outward",
+    "difficulty": "hard",
+    "grid_size": [
+      7,
+      7
+    ],
+    "start": [
+      3,
+      3
+    ],
+    "goal": [
+      6,
+      6
+    ],
+    "obstacles": [
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        3
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left",
+      "loop"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 10,
+    "description": "Spiral out from the center!",
+    "learning_goal": "Combine turns and loops strategically",
+    "hints": [
+      "You're surrounded! Find the escape",
+      "Move diagonally outward",
+      "Use loops when going straight"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 14,
+    "name": "The Square",
+    "difficulty": "hard",
+    "grid_size": [
+      6,
+      6
+    ],
+    "start": [
+      1,
+      1
+    ],
+    "goal": [
+      1,
+      1
+    ],
+    "obstacles": [
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        2
+      ],
+      [
+        3,
+        3
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "loop"
+    ],
+    "max_steps": 12,
+    "time_limit": null,
+    "optimal_solution": 10,
+    "description": "Go around the obstacle and return home!",
+    "learning_goal": "Plan a complete circuit path",
+    "hints": [
+      "You need to make a square path",
+      "Each side: forward + loop",
+      "4 sides = 4 turns"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 15,
+    "name": "Precision Required",
+    "difficulty": "hard",
+    "grid_size": [
+      8,
+      8
+    ],
+    "start": [
+      0,
+      4
+    ],
+    "goal": [
+      7,
+      4
+    ],
+    "obstacles": [
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        4,
+        3
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        6,
+        3
+      ],
+      [
+        6,
+        4
+      ],
+      [
+        6,
+        5
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left",
+      "loop"
+    ],
+    "max_steps": 20,
+    "time_limit": null,
+    "optimal_solution": 16,
+    "description": "Navigate the maze with limited moves!",
+    "learning_goal": "Combine all skills: planning, loops, efficiency",
+    "hints": [
+      "Plan your entire route first",
+      "Each wall has exactly one gap",
+      "Use loops on the long stretches"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 16,
+    "name": "The Labyrinth",
+    "difficulty": "hard",
+    "grid_size": [
+      9,
+      9
+    ],
+    "start": [
+      0,
+      4
+    ],
+    "goal": [
+      8,
+      4
+    ],
+    "obstacles": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        1,
+        7
+      ],
+      [
+        3,
+        0
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        3,
+        7
+      ],
+      [
+        3,
+        8
+      ],
+      [
+        5,
+        1
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        7,
+        0
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        7,
+        3
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        7,
+        5
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        7,
+        8
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left",
+      "loop"
+    ],
+    "max_steps": null,
+    "time_limit": null,
+    "optimal_solution": 24,
+    "description": "The ultimate maze challenge!",
+    "learning_goal": "Master maze navigation with all tools",
+    "hints": [
+      "Map out the entire path first",
+      "There's only one way through",
+      "Be patient and systematic"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 17,
+    "name": "Speed Run",
+    "difficulty": "hard",
+    "grid_size": [
+      8,
+      8
+    ],
+    "start": [
+      0,
+      0
+    ],
+    "goal": [
+      7,
+      7
+    ],
+    "obstacles": [
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        5,
+        5
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left",
+      "loop"
+    ],
+    "max_steps": null,
+    "time_limit": 30,
+    "optimal_solution": 18,
+    "description": "Reach the goal in 30 seconds!",
+    "learning_goal": "Apply skills quickly under pressure",
+    "hints": [
+      "Don't overthink - act fast!",
+      "Diagonal path is shortest",
+      "Use loops to save time"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 18,
+    "name": "Minimal Moves",
+    "difficulty": "expert",
+    "grid_size": [
+      10,
+      10
+    ],
+    "start": [
+      0,
+      5
+    ],
+    "goal": [
+      9,
+      5
+    ],
+    "obstacles": [
+      [
+        3,
+        4
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        3,
+        6
+      ],
+      [
+        6,
+        3
+      ],
+      [
+        6,
+        4
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        6,
+        7
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left",
+      "loop"
+    ],
+    "max_steps": 15,
+    "time_limit": null,
+    "optimal_solution": 13,
+    "description": "Cross the field with only 15 commands!",
+    "learning_goal": "Extreme efficiency with loops",
+    "hints": [
+      "Every command must count",
+      "Maximize loop usage",
+      "Find the path with longest straights"
+    ],
+    "requires_loop": true
+  },
+  {
+    "level_id": 19,
+    "name": "The Gauntlet",
+    "difficulty": "expert",
+    "grid_size": [
+      10,
+      6
+    ],
+    "start": [
+      0,
+      3
+    ],
+    "goal": [
+      9,
+      3
+    ],
+    "obstacles": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        3,
+        0
+      ],
+      [
+        3,
+        2
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        1
+      ],
+      [
+        4,
+        3
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        6,
+        1
+      ],
+      [
+        6,
+        3
+      ],
+      [
+        6,
+        5
+      ],
+      [
+        7,
+        0
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        8,
+        1
+      ],
+      [
+        8,
+        3
+      ],
+      [
+        8,
+        5
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left",
+      "loop"
+    ],
+    "max_steps": 25,
+    "time_limit": null,
+    "optimal_solution": 22,
+    "description": "Weave through the dense obstacle field!",
+    "learning_goal": "Handle high-density obstacle navigation",
+    "hints": [
+      "Follow the zigzag pattern",
+      "Look one move ahead always",
+      "Patience is key"
+    ],
+    "requires_loop": false
+  },
+  {
+    "level_id": 20,
+    "name": "Grand Master",
+    "difficulty": "expert",
+    "grid_size": [
+      12,
+      12
+    ],
+    "start": [
+      0,
+      6
+    ],
+    "goal": [
+      11,
+      6
+    ],
+    "obstacles": [
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        2,
+        7
+      ],
+      [
+        2,
+        8
+      ],
+      [
+        2,
+        10
+      ],
+      [
+        2,
+        11
+      ],
+      [
+        5,
+        1
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        5,
+        8
+      ],
+      [
+        5,
+        9
+      ],
+      [
+        5,
+        10
+      ],
+      [
+        8,
+        0
+      ],
+      [
+        8,
+        1
+      ],
+      [
+        8,
+        3
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        8,
+        5
+      ],
+      [
+        8,
+        6
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        8,
+        9
+      ],
+      [
+        8,
+        10
+      ],
+      [
+        8,
+        11
+      ]
+    ],
+    "allowed_commands": [
+      "forward",
+      "turn_right",
+      "turn_left",
+      "loop"
+    ],
+    "max_steps": 30,
+    "time_limit": 60,
+    "optimal_solution": 26,
+    "description": "The final challenge. Prove your mastery!",
+    "learning_goal": "Apply everything you've learned",
+    "hints": [
+      "This is the ultimate test",
+      "Plan completely before starting",
+      "You've trained for this!"
+    ],
+    "requires_loop": true
+  }
+]

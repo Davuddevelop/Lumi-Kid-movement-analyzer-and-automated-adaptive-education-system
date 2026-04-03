@@ -12,6 +12,7 @@ from guided_questions import GuidedQuestionSystem
 from achievements import AchievementSystem
 from personality import PersonalitySystem
 from memory import MemorySystem
+from level_system import LevelSystem, ValidationResult
 
 app = FastAPI()
 
@@ -22,6 +23,7 @@ question_system = GuidedQuestionSystem()
 achievement_system = AchievementSystem()
 personality_system = PersonalitySystem(default_mode="coach")
 memory_system = MemorySystem(max_history=3)
+level_system = LevelSystem()
 last_mistake_tag = None  # Track for questions
 
 app.add_middleware(
@@ -65,6 +67,9 @@ class RobotState:
         self.goal = {"x": 6, "y": 4}
         self.obstacles = [{"x": 3, "y": 4}, {"x": 4, "y": 4}]
         self.path = []
+        self.vitals = {"joy": 85, "focus": 40}
+        self.sentiment = "curiosity"
+        self.current_level_id = 1
 
     def to_dict(self):
         data = {
@@ -78,6 +83,9 @@ class RobotState:
             "goal": self.goal,
             "obstacles": self.obstacles,
             "path": self.path,
+            "vitals": self.vitals,
+            "sentiment": self.sentiment,
+            "current_level_id": self.current_level_id,
             "available_blocks": BLOCKS
         }
         # Add current question if any
@@ -175,6 +183,20 @@ async def execute_commands():
         state.status = "success"
         result = "success"
         last_mistake_tag = None
+        
+        # Record level completion in LevelSystem
+        completion_result = ValidationResult(
+            success=True,
+            reached_goal=True,
+            error=None,
+            path=[(p["x"], p["y"]) for p in state.path],
+            commands_used=len(unrolled),
+            efficiency_score=100.0,
+            stars=3,
+            feedback="Perfect!"
+        )
+        level_system.record_completion(state.current_level_id, completion_result)
+        
         # Record mission completion for achievements
         mission_badges = achievement_system.record_mission_complete()
         # Use personality-based success message
@@ -342,13 +364,26 @@ async def voice_interact(voice: VoiceInput):
     analysis = analyzer.analyze(voice.text)
     response = analyzer.get_lumi_response(analysis, state.to_dict())
 
+    # Sync state with analysis
+    state.sentiment = analysis.get("sentiment", "neutral")
+    # Dynamically adjust vitals based on sentiment
+    if state.sentiment == "joy":
+        state.vitals["joy"] = min(100, state.vitals["joy"] + 10)
+    elif state.sentiment == "frustration":
+        state.vitals["joy"] = max(0, state.vitals["joy"] - 15)
+        state.vitals["focus"] = max(0, state.vitals["focus"] - 5)
+    elif state.sentiment == "curiosity":
+        state.vitals["focus"] = min(100, state.vitals["focus"] + 15)
+
     logger.log_interaction(voice.text, analysis)
     state.feedback = response
     await broadcast_state()
 
     return {
         "speech": response,
-        "analysis": analysis
+        "analysis": analysis,
+        "vitals": state.vitals,
+        "sentiment": state.sentiment
     }
 
 class AnswerInput(BaseModel):
@@ -551,6 +586,116 @@ async def set_personality(data: PersonalityMode):
 @app.post("/api/reset")
 async def reset_state():
     return await load_demo()
+
+# ============================================
+# LEVEL SYSTEM ENDPOINTS
+# ============================================
+
+@app.get("/api/levels")
+async def get_levels():
+    """Get all levels with player progress."""
+    levels_data = []
+    for level in level_system.get_all_levels():
+        level_dict = level.to_dict()
+        level_dict["unlocked"] = level_system.is_level_unlocked(level.level_id)
+        level_dict["completed"] = level.level_id in level_system.progress.completed_levels
+        level_dict["stars"] = level_system.progress.stars_earned.get(level.level_id, 0)
+        level_dict["best_solution"] = level_system.progress.best_solutions.get(level.level_id)
+        level_dict["attempts"] = level_system.progress.attempts.get(level.level_id, 0)
+        # Add chapter info
+        if level.level_id <= 5:
+            level_dict["chapter"] = 1
+            level_dict["chapter_name"] = "Basics"
+        elif level.level_id <= 10:
+            level_dict["chapter"] = 2
+            level_dict["chapter_name"] = "Obstacles"
+        elif level.level_id <= 15:
+            level_dict["chapter"] = 3
+            level_dict["chapter_name"] = "Loops"
+        else:
+            level_dict["chapter"] = 4
+            level_dict["chapter_name"] = "Mastery"
+        levels_data.append(level_dict)
+
+    return {
+        "levels": levels_data,
+        "progress": level_system.get_progress_summary()
+    }
+
+class LevelLoadRequest(BaseModel):
+    level_id: int
+
+@app.post("/api/levels/load")
+async def load_level(request: LevelLoadRequest):
+    """Load a specific level into the game state."""
+    level = level_system.get_level(request.level_id)
+
+    if not level:
+        return {"success": False, "error": "Level not found"}
+
+    if not level_system.is_level_unlocked(request.level_id):
+        return {"success": False, "error": "Level is locked"}
+
+    # Update game state with level configuration
+    state.current_level_id = request.level_id
+    state.grid_size = {"width": level.grid_size[0], "height": level.grid_size[1]}
+    state.start_pos = {"x": level.start[0], "y": level.start[1]}
+    state.robot_pos = {"x": level.start[0], "y": level.start[1]}
+    state.goal = {"x": level.goal[0], "y": level.goal[1]}
+    state.obstacles = [{"x": o[0], "y": o[1]} for o in level.obstacles]
+    state.commands = []
+    state.path = []
+    state.status = "idle"
+    state.feedback = f"Level {level.level_id}: {level.name}"
+    state.suggestion = level.description
+
+    # Start analytics session for this level
+    logger.start_mission(f"Level_{level.level_id}_{level.name}")
+
+    await broadcast_state()
+
+    return {
+        "success": True,
+        "level": level.to_dict(),
+        "allowed_commands": level.allowed_commands,
+        "max_steps": level.max_steps,
+        "time_limit": level.time_limit,
+        "learning_goal": level.learning_goal
+    }
+
+@app.get("/api/levels/{level_id}")
+async def get_level_detail(level_id: int):
+    """Get detailed info for a specific level."""
+    level = level_system.get_level(level_id)
+    if not level:
+        return {"error": "Level not found"}
+
+    level_dict = level.to_dict()
+    level_dict["unlocked"] = level_system.is_level_unlocked(level_id)
+    level_dict["completed"] = level_id in level_system.progress.completed_levels
+    level_dict["stars"] = level_system.progress.stars_earned.get(level_id, 0)
+    level_dict["best_solution"] = level_system.progress.best_solutions.get(level_id)
+
+    return level_dict
+
+@app.get("/api/levels/{level_id}/hint")
+async def get_level_hint(level_id: int, index: int = 0):
+    """Get a hint for a specific level."""
+    hint = level_system.get_hint(level_id, index)
+    if not hint:
+        return {"hint": None}
+
+    return {
+        "hint": hint,
+        "index": index,
+        "has_more": index < len(level_system.get_level(level_id).hints) - 1
+    }
+
+@app.post("/api/levels/progress/reset")
+async def reset_level_progress():
+    """Reset all level progress."""
+    level_system.reset_progress()
+    return {"success": True, "message": "Level progress reset"}
 
 if __name__ == "__main__":
     print("\n" + "="*50)
