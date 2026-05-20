@@ -1,10 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Map, Mic, MicOff, RefreshCw } from 'lucide-react';
-import GridBoard from './components/GridBoard';
-import LevelSelect from './components/LevelSelect';
-import LumiAvatar from './components/LumiAvatar';
+import GridBoard        from './components/GridBoard';
+import LevelSelect      from './components/LevelSelect';
+import LumiAvatar       from './components/LumiAvatar';
 import AchievementBlast from './components/AchievementBlast';
-import QuestionPanel from './components/QuestionPanel';
+import QuestionPanel    from './components/QuestionPanel';
+import WorldMap         from './components/WorldMap';
+import ParentDashboard  from './components/ParentDashboard';
+import StoryMode        from './components/StoryMode';
+import FocusMode        from './components/FocusMode';
+import DailyChallenge   from './components/DailyChallenge';
+import Onboarding       from './components/Onboarding';
+import ThemeSelector    from './components/ThemeSelector';
 
 // ─── API config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -20,11 +27,11 @@ const CMD_CONFIG = {
 
 // ─── Emotion map ───────────────────────────────────────────────────────────────
 function getLumiEmotion(status, sentiment, hasQuestion) {
-  if (hasQuestion)            return 'surprised';
-  if (status === 'success')   return 'excited';
-  if (status === 'error' || status === 'fail') return 'sad';
-  if (status === 'executing') return 'thinking';
-  if (sentiment === 'joy')    return 'happy';
+  if (hasQuestion)                              return 'surprised';
+  if (status === 'success')                     return 'excited';
+  if (status === 'error' || status === 'fail')  return 'sad';
+  if (status === 'executing')                   return 'thinking';
+  if (sentiment === 'joy')                      return 'happy';
   return 'happy';
 }
 
@@ -96,13 +103,59 @@ function useWebSocket(url, onMessage) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
+  // ── Core view & game state ─────────────────────────────────────────────────
   const [view, setView]           = useState('game');
   const [gameState, setGameState] = useState(INITIAL_STATE);
   const [isListening, setIsListening] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning]     = useState(false);
   const [showBubble, setShowBubble]   = useState(false);
   const bubbleTimerRef  = useRef(null);
   const prevFeedbackRef = useRef('');
+
+  // ── Onboarding ─────────────────────────────────────────────────────────────
+  const [showOnboarding, setShowOnboarding] = useState(
+    !localStorage.getItem('lumi_onboarded')
+  );
+
+  // ── Theme ──────────────────────────────────────────────────────────────────
+  const [theme, setTheme]           = useState(localStorage.getItem('lumi_theme') || 'space');
+  const [showThemes, setShowThemes] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('lumi_theme', theme);
+  }, [theme]);
+
+  const handleThemeChange = useCallback((newTheme) => {
+    setTheme(newTheme);
+    setShowThemes(false);
+  }, []);
+
+  // ── Story / level staging ──────────────────────────────────────────────────
+  const [pendingLevel, setPendingLevel] = useState(null);
+
+  // ── Levels list ────────────────────────────────────────────────────────────
+  const [levels, setLevels] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/levels`)
+      .then(r => r.json())
+      .then(data => setLevels(Array.isArray(data) ? data : data.levels ?? []))
+      .catch(e => console.warn('[Levels] fetch failed', e));
+  }, []);
+
+  // ── Daily challenge ────────────────────────────────────────────────────────
+  const [dailyChallenge, setDailyChallenge] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/daily-challenge`)
+      .then(r => r.json())
+      .then(data => setDailyChallenge(data))
+      .catch(e => console.warn('[DailyChallenge] fetch failed', e));
+  }, []);
+
+  // ── Focus mode ─────────────────────────────────────────────────────────────
+  const [showFocus, setShowFocus] = useState(false);
 
   // ── TTS ────────────────────────────────────────────────────────────────────
   const speak = useCallback((text) => {
@@ -118,7 +171,6 @@ function App() {
   const handleWsMessage = useCallback((newState) => {
     setGameState(prev => ({ ...prev, ...newState }));
 
-    // Speak feedback when it changes and not mid-execution
     if (
       newState.feedback &&
       newState.feedback !== prevFeedbackRef.current &&
@@ -126,8 +178,6 @@ function App() {
     ) {
       prevFeedbackRef.current = newState.feedback;
       speak(newState.feedback);
-
-      // Show speech bubble
       setShowBubble(true);
       clearTimeout(bubbleTimerRef.current);
       bubbleTimerRef.current = setTimeout(() => setShowBubble(false), 5000);
@@ -150,7 +200,7 @@ function App() {
     }
   }, []);
 
-  // ── Actions ────────────────────────────────────────────────────────────────
+  // ── Game actions ───────────────────────────────────────────────────────────
   const handleRun = async () => {
     if (gameState.commands.length === 0 || gameState.status === 'executing' || isRunning) return;
     setIsRunning(true);
@@ -162,11 +212,6 @@ function App() {
 
   const handleHint = () => apiPost('/api/hint');
 
-  const handleSelectLevel = async (level) => {
-    await apiPost('/api/levels/load', { level_id: level.level_id });
-    setView('game');
-  };
-
   const handleAnswer = (answerId) => {
     apiPost('/api/question/answer', { answer_id: answerId });
     setGameState(prev => ({ ...prev, question: null }));
@@ -176,6 +221,49 @@ function App() {
     setGameState(prev => ({ ...prev, achievement: null }));
   };
 
+  // ── Level loading ──────────────────────────────────────────────────────────
+  const loadLevel = useCallback(async (level) => {
+    await apiPost('/api/levels/load', { level_id: level.level_id });
+    setView('game');
+  }, [apiPost]);
+
+  // handleSelectLevel — used by LevelSelect (legacy fallback)
+  const handleSelectLevel = useCallback(async (level) => {
+    await loadLevel(level);
+  }, [loadLevel]);
+
+  // WorldMap → Story → Game flow
+  const handleWorldMapSelectLevel = useCallback((level) => {
+    setPendingLevel(level);
+    setView('story');
+  }, []);
+
+  const handleStoryStart = useCallback(async () => {
+    if (pendingLevel) {
+      await loadLevel(pendingLevel);
+      setPendingLevel(null);
+    }
+  }, [pendingLevel, loadLevel]);
+
+  // Daily challenge play
+  const handleDailyPlay = useCallback(async () => {
+    if (!dailyChallenge) return;
+    const level = levels.find(l => l.level_id === dailyChallenge.level_id) ||
+                  (levels.length > 0 ? levels[0] : null);
+    if (level) {
+      setPendingLevel(level);
+      setView('story');
+    }
+  }, [dailyChallenge, levels]);
+
+  // ── Parent access ──────────────────────────────────────────────────────────
+  const handleParentAccess = useCallback(() => {
+    const pin = window.prompt('Parent PIN (default: 1234)');
+    if (pin === '1234') {
+      setView('parent');
+    }
+  }, []);
+
   // ── Voice input ────────────────────────────────────────────────────────────
   const startListening = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -184,7 +272,7 @@ function App() {
       return;
     }
     const rec = new SR();
-    rec.lang = 'en-US';
+    rec.lang     = 'en-US';
     rec.onstart  = () => setIsListening(true);
     rec.onend    = () => setIsListening(false);
     rec.onerror  = () => setIsListening(false);
@@ -216,7 +304,42 @@ function App() {
 
   const isExecutingOrRunning = isRunning || gameState.status === 'executing';
 
-  // ── Level Select view ──────────────────────────────────────────────────────
+  // ── Full-screen view renders ───────────────────────────────────────────────
+  if (view === 'world_map') {
+    return (
+      <>
+        {showOnboarding && (
+          <Onboarding
+            onComplete={() => {
+              localStorage.setItem('lumi_onboarded', '1');
+              setShowOnboarding(false);
+            }}
+          />
+        )}
+        <WorldMap
+          levels={levels}
+          onSelectLevel={handleWorldMapSelectLevel}
+          onBack={() => setView('game')}
+          currentLevelId={gameState.current_level_id}
+        />
+      </>
+    );
+  }
+
+  if (view === 'parent') {
+    return <ParentDashboard onBack={() => setView('game')} />;
+  }
+
+  if (view === 'story') {
+    return (
+      <StoryMode
+        level={pendingLevel}
+        onStart={handleStoryStart}
+        onBack={() => setView('world_map')}
+      />
+    );
+  }
+
   if (view === 'levels') {
     return (
       <LevelSelect
@@ -226,9 +349,33 @@ function App() {
     );
   }
 
-  // ── Game view ──────────────────────────────────────────────────────────────
+  // ── Game view (default) ────────────────────────────────────────────────────
   return (
     <div className="app-shell">
+
+      {/* ── ONBOARDING OVERLAY ─────────────────────────────────────────── */}
+      {showOnboarding && (
+        <Onboarding
+          onComplete={() => {
+            localStorage.setItem('lumi_onboarded', '1');
+            setShowOnboarding(false);
+          }}
+        />
+      )}
+
+      {/* ── THEME SELECTOR OVERLAY ─────────────────────────────────────── */}
+      {showThemes && (
+        <ThemeSelector
+          currentTheme={theme}
+          onSelect={handleThemeChange}
+          onClose={() => setShowThemes(false)}
+        />
+      )}
+
+      {/* ── FOCUS MODE OVERLAY ─────────────────────────────────────────── */}
+      {showFocus && (
+        <FocusMode onClose={() => setShowFocus(false)} />
+      )}
 
       {/* ── TOP STRIP ──────────────────────────────────────────────────── */}
       <div className="top-strip">
@@ -251,14 +398,34 @@ function App() {
           </div>
         </div>
 
-        {/* Map nav */}
+        {/* Focus button */}
+        <button
+          className="focus-btn"
+          onClick={() => setShowFocus(true)}
+          aria-label="Open focus mode"
+          title="Focus Mode"
+        >
+          🎯
+        </button>
+
+        {/* Map nav — opens WorldMap */}
         <button
           className="map-btn"
-          onClick={() => setView('levels')}
+          onClick={() => setView('world_map')}
           aria-label="Open adventure map"
         >
           <Map size={22} />
           <span>MAP</span>
+        </button>
+
+        {/* Parent access */}
+        <button
+          className="parent-btn"
+          onClick={handleParentAccess}
+          aria-label="Parent dashboard"
+          title="Parent Dashboard"
+        >
+          👨‍👩‍👧
         </button>
 
         {/* Lumi avatar corner */}
@@ -300,6 +467,13 @@ function App() {
         </div>
       </div>
 
+      {/* ── DAILY CHALLENGE CARD ───────────────────────────────────────── */}
+      {dailyChallenge && (
+        <DailyChallenge
+          onPlay={handleDailyPlay}
+        />
+      )}
+
       {/* ── BLOCK STRIP ────────────────────────────────────────────────── */}
       <div className="block-strip-wrapper">
         <div className="block-strip-label">MOVES</div>
@@ -311,7 +485,7 @@ function App() {
             </div>
           ) : (
             gameState.commands.map((cmd, idx) => {
-              const cfg = CMD_CONFIG[cmd] ?? { emoji: '❓', label: '?' };
+              const cfg    = CMD_CONFIG[cmd] ?? { emoji: '❓', label: '?' };
               const isExec = isExecutingOrRunning && idx === 0;
               return (
                 <div
@@ -345,10 +519,7 @@ function App() {
         <button
           className="run-button"
           onClick={handleRun}
-          disabled={
-            gameState.commands.length === 0 ||
-            isExecutingOrRunning
-          }
+          disabled={gameState.commands.length === 0 || isExecutingOrRunning}
           aria-label="Run the program"
         >
           {isExecutingOrRunning ? (

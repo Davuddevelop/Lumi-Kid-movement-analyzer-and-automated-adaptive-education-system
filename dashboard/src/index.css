@@ -1453,3 +1453,466 @@ body {
   .block-tile { width: 70px; height: 70px; font-size: 1.7rem; }
   .answer-card { width: 90px; height: 90px; font-size: 2.5rem; }
 }
+
+/* ============================================
+   THEME SYSTEM — data-theme attribute variants
+   ============================================ */
+
+/* ─── THEME: OCEAN ─── */
+[data-theme="ocean"] {
+  --bg-space: #020b18;
+  --bg-deep: #041525;
+  --bg-mid: #062035;
+  --primary: #00b4d8;
+  --primary-glow: rgba(0,180,216,0.45);
+  --primary-dark: #0096c7;
+  --secondary: #48cae4;
+  --coral: #90e0ef;
+  --cyan: #00b4d8;
+  --mint: #48cae4;
+  --text-main: #e0f7fa;
+  --text-muted: #80cbc4;
+}
+[data-theme="ocean"] body {
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(0,180,216,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(72,202,228,0.08) 0%, transparent 50%);
+}
+
+/* ─── THEME: FOREST ─── */
+[data-theme="forest"] {
+  --bg-space: #021a0a;
+  --bg-deep: #042d10;
+  --bg-mid: #063d15;
+  --primary: #44e5a0;
+  --primary-glow: rgba(68,229,160,0.45);
+  --primary-dark: #2ecc71;
+  --secondary: #f9c74f;
+  --coral: #f8961e;
+  --cyan: #43aa8b;
+  --mint: #90be6d;
+  --text-main: #e8f5e9;
+  --text-muted: #a5d6a7;
+}
+[data-theme="forest"] body {
+  background-image:
+    radial-gradient(ellipse at 30% 30%, rgba(68,229,160,0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(144,190,109,0.08) 0%, transparent 50%);
+}
+
+/* ─── THEME: NEON ─── */
+[data-theme="neon"] {
+  --bg-space: #000000;
+  --bg-deep: #050010;
+  --bg-mid: #0a0020;
+  --primary: #ff00ff;
+  --primary-glow: rgba(255,0,255,0.5);
+  --primary-dark: #cc00cc;
+  --secondary: #00ffff;
+  --coral: #ff0080;
+  --cyan: #00ffff;
+  --mint: #00ff88;
+  --text-main: #ffffff;
+  --text-muted: #cc88ff;
+}
+[data-theme="neon"] body {
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(255,0,255,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(0,255,255,0.1) 0%, transparent 50%);
+}
+[data-theme="neon"] .glass-panel,
+[data-theme="neon"] .top-strip,
+[data-theme="neon"] .block-strip-wrapper,
+[data-theme="neon"] .action-bar {
+  border-color: rgba(255,0,255,0.3);
+  box-shadow: 0 0 20px rgba(255,0,255,0.15);
+}
+
+/* ─── THEME: CANDY ─── */
+[data-theme="candy"] {
+  --bg-space: #1a0a1e;
+  --bg-deep: #2d1040;
+  --bg-mid: #3d1a50;
+  --primary: #ff6eb4;
+  --primary-glow: rgba(255,110,180,0.45);
+  --primary-dark: #e05090;
+  --secondary: #ffd6e7;
+  --coral: #ffb3c6;
+  --cyan: #bde0fe;
+  --mint: #b7e4c7;
+  --text-main: #fff0f8;
+  --text-muted: #e8a0c8;
+}
+[data-theme="candy"] body {
+  background-image:
+    radial-gradient(ellipse at 25% 25%, rgba(255,110,180,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 75%, rgba(189,224,254,0.1) 0%, transparent 50%);
+}
+
+/* ============================================
+   WORLD MAP
+   ============================================ */
+.world-map-screen {
+  position: fixed; inset: 0;
+  background: var(--bg-space);
+  overflow-y: auto;
+  z-index: 100;
+}
+.world-map-back {
+  position: sticky; top: 0;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+  display: flex; align-items: center; gap: 12px;
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.2rem;
+  color: var(--text-main);
+  border: none; cursor: pointer;
+  min-height: var(--touch-min);
+  width: 100%;
+}
+.world-map-svg-container {
+  display: flex; justify-content: center;
+  padding: 20px 0 40px;
+}
+.zone-label {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.1rem;
+  fill: var(--text-main);
+}
+.level-node {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.level-node:hover { transform: scale(1.1); }
+.level-node.current { animation: pulse-node 1.5s infinite; }
+@keyframes pulse-node {
+  0%,100% { filter: drop-shadow(0 0 6px var(--primary)); }
+  50% { filter: drop-shadow(0 0 18px var(--primary)); }
+}
+
+/* ============================================
+   PARENT DASHBOARD
+   ============================================ */
+.parent-dashboard {
+  position: fixed; inset: 0;
+  background: var(--bg-space);
+  overflow-y: auto;
+  z-index: 100;
+  padding: 0 0 40px;
+}
+.parent-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 10;
+}
+.parent-back-btn {
+  background: none; border: 2px solid var(--glass-border);
+  color: var(--text-main); border-radius: 12px;
+  min-height: var(--touch-min); padding: 0 20px;
+  font-family: 'Fredoka One', sans-serif; font-size: 1.1rem;
+  cursor: pointer;
+}
+.parent-stats-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 12px; padding: 16px;
+}
+.stat-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 16px;
+  text-align: center;
+}
+.stat-card-emoji { font-size: 2rem; }
+.stat-card-value {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 2.2rem; color: var(--primary);
+  line-height: 1.1;
+}
+.stat-card-label {
+  font-size: 0.85rem; color: var(--text-muted);
+  margin-top: 4px;
+}
+.parent-section {
+  padding: 0 16px; margin-top: 20px;
+}
+.parent-section-title {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.3rem; color: var(--text-main);
+  margin-bottom: 12px;
+}
+.radar-chart-wrap { display: flex; justify-content: center; padding: 8px; }
+.ai-report-box {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 20px;
+  color: var(--text-main); line-height: 1.6;
+  font-size: 0.95rem;
+}
+.skeleton {
+  height: 16px; border-radius: 8px;
+  background: linear-gradient(90deg, var(--bg-mid) 25%, var(--bg-deep) 50%, var(--bg-mid) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  margin-bottom: 10px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.recommendation-card {
+  background: linear-gradient(135deg, var(--bg-mid), var(--bg-deep));
+  border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 14px 18px;
+  margin-bottom: 10px; font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+/* ============================================
+   STORY MODE
+   ============================================ */
+.story-screen {
+  position: fixed; inset: 0;
+  background: var(--bg-space);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 100; padding: 24px;
+  text-align: center;
+  overflow: hidden;
+}
+.story-star {
+  position: absolute; border-radius: 50%;
+  background: white; opacity: 0.6;
+  animation: star-drift linear infinite;
+}
+@keyframes star-drift {
+  from { transform: translateY(100vh); }
+  to   { transform: translateY(-10px); }
+}
+.story-chapter-label {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1rem; letter-spacing: 3px;
+  color: var(--text-muted); text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.story-text {
+  font-size: 1.3rem; color: var(--text-main);
+  max-width: 340px; line-height: 1.5;
+  margin: 20px 0;
+}
+.story-mission-name {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.5rem; color: var(--primary);
+  margin-bottom: 24px;
+}
+.story-buttons {
+  display: flex; flex-direction: column;
+  gap: 12px; width: 100%; max-width: 340px;
+}
+.story-start-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border: none; border-radius: 20px;
+  min-height: 70px; font-family: 'Fredoka One', sans-serif;
+  font-size: 1.5rem; color: white; cursor: pointer;
+  box-shadow: 0 6px 24px var(--primary-glow);
+  transition: transform 0.15s;
+}
+.story-start-btn:active { transform: scale(0.97); }
+.story-back-btn {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 16px; min-height: 56px;
+  font-family: 'Fredoka One', sans-serif; font-size: 1.1rem;
+  color: var(--text-muted); cursor: pointer;
+}
+
+/* ============================================
+   FOCUS MODE
+   ============================================ */
+.focus-overlay {
+  position: fixed; inset: 0;
+  background: rgba(5, 0, 16, 0.97);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 200; gap: 24px;
+}
+.focus-close {
+  position: absolute; top: 16px; right: 16px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  color: var(--text-main); border-radius: 50%;
+  width: 60px; height: 60px; font-size: 1.5rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.focus-preset-row {
+  display: flex; gap: 16px;
+}
+.focus-preset-btn {
+  background: var(--glass-bg); border: 2px solid var(--glass-border);
+  border-radius: 20px; min-width: 90px; min-height: var(--touch-min);
+  font-family: 'Fredoka One', sans-serif; font-size: 1.1rem;
+  color: var(--text-main); cursor: pointer; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.focus-preset-btn.active { border-color: var(--primary); color: var(--primary); }
+.focus-timer-label {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 3rem; color: var(--text-main); position: absolute;
+}
+.focus-controls { display: flex; gap: 16px; }
+.focus-start-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border: none; border-radius: 16px;
+  min-height: 64px; min-width: 140px;
+  font-family: 'Fredoka One', sans-serif; font-size: 1.3rem;
+  color: white; cursor: pointer;
+}
+.focus-reset-btn {
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 16px; min-height: 64px; min-width: 80px;
+  font-size: 1.5rem; cursor: pointer; color: var(--text-muted);
+}
+.focus-tip {
+  font-size: 1rem; color: var(--text-muted);
+  text-align: center; max-width: 260px;
+}
+
+/* ============================================
+   DAILY CHALLENGE CARD
+   ============================================ */
+.daily-challenge-card {
+  margin: 0 12px 8px;
+  background: linear-gradient(135deg, rgba(255,209,102,0.15), rgba(255,159,67,0.1));
+  border: 1px solid rgba(255,209,102,0.35);
+  border-radius: 18px; padding: 10px 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.daily-challenge-emoji { font-size: 1.8rem; flex-shrink: 0; }
+.daily-challenge-info { flex: 1; min-width: 0; }
+.daily-challenge-title {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 0.9rem; color: var(--secondary); line-height: 1;
+}
+.daily-challenge-desc {
+  font-size: 0.78rem; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.daily-xp { font-size: 0.78rem; color: var(--mint); font-weight: 700; }
+.daily-play-btn {
+  background: linear-gradient(135deg, #ff9f43, #ff6b6b);
+  border: none; border-radius: 12px;
+  min-height: 44px; min-width: 64px;
+  font-family: 'Fredoka One', sans-serif; font-size: 1rem;
+  color: white; cursor: pointer; flex-shrink: 0;
+}
+
+/* ============================================
+   ONBOARDING
+   ============================================ */
+.onboarding-overlay {
+  position: fixed; inset: 0;
+  background: var(--bg-space);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 300; padding: 32px 24px;
+  text-align: center;
+}
+.onboarding-dots {
+  display: flex; gap: 10px;
+  margin-bottom: 32px;
+}
+.onboarding-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--glass-border); cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.onboarding-dot.active {
+  background: var(--primary); transform: scale(1.3);
+}
+.onboarding-title {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 2.4rem; color: var(--text-main);
+  margin: 20px 0 12px;
+}
+.onboarding-text {
+  font-size: 1.2rem; color: var(--text-muted);
+  max-width: 300px; line-height: 1.5; margin-bottom: 32px;
+}
+.onboarding-next-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border: none; border-radius: 20px;
+  min-height: 70px; min-width: 200px;
+  font-family: 'Fredoka One', sans-serif; font-size: 1.4rem;
+  color: white; cursor: pointer;
+  box-shadow: 0 6px 24px var(--primary-glow);
+}
+.onboarding-block-row {
+  display: flex; gap: 12px; margin: 20px 0;
+}
+.ob-block {
+  width: 75px; height: 75px; border-radius: 16px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; font-family: 'Fredoka One', sans-serif; font-size: 1.4rem;
+}
+.ob-arrow { font-size: 1.1rem; }
+
+/* ============================================
+   THEME SELECTOR
+   ============================================ */
+.theme-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 250;
+}
+.theme-card-grid {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px; padding: 24px;
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 14px; max-width: 360px; width: 90%;
+  position: relative;
+}
+.theme-close {
+  position: absolute; top: -20px; right: -20px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  color: var(--text-main); font-size: 1.2rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.theme-card {
+  border-radius: 16px; padding: 14px;
+  cursor: pointer; border: 2px solid transparent;
+  transition: border-color 0.2s, transform 0.15s;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.theme-card.selected { border-color: white; }
+.theme-card:hover { transform: scale(1.03); }
+.theme-card-name {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1rem; color: white;
+}
+.theme-swatches { display: flex; gap: 6px; }
+.theme-swatch {
+  width: 20px; height: 20px; border-radius: 50%;
+}
+.theme-check {
+  margin-left: auto; font-size: 1.2rem;
+}
+
+/* ============================================
+   FOCUS / PARENT BUTTONS in top strip
+   ============================================ */
+.focus-btn, .parent-btn {
+  background: none; border: 1px solid var(--glass-border);
+  color: var(--text-muted); border-radius: 12px;
+  min-height: 42px; min-width: 42px;
+  cursor: pointer; font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.2s, border-color 0.2s;
+}
+.focus-btn:hover, .parent-btn:hover {
+  color: var(--primary); border-color: var(--primary);
+}

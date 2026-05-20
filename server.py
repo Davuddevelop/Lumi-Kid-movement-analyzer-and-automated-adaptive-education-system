@@ -16,6 +16,9 @@ from level_system import LevelSystem, ValidationResult
 from db import init_db, add_xp, save_mission_attempt, save_level_progress, get_level_progress, get_child_xp, get_parent_stats
 from esp32_bridge import robot_bridge
 import lumi_ai
+from daily_challenge import get_today_challenge, check_challenge_completion
+from story_system import get_story_for_level, get_all_chapters
+from skill_engine import compute_skill_scores
 
 app = FastAPI()
 
@@ -836,8 +839,9 @@ async def robot_ws(ws: WebSocket):
 
 @app.get("/api/parent/stats")
 async def get_parent_dashboard():
-    """Get parent-facing stats for the default child."""
-    return get_parent_stats()
+    stats = get_parent_stats()
+    stats["skills"] = compute_skill_scores()
+    return stats
 
 
 @app.get("/api/parent/report")
@@ -862,6 +866,59 @@ async def list_robots():
             for rid in robot_bridge.list_robots()
         }
     }
+
+
+# ============================================
+# DAILY CHALLENGE ENDPOINTS
+# ============================================
+
+@app.get("/api/daily-challenge")
+async def daily_challenge():
+    return get_today_challenge()
+
+@app.post("/api/daily-challenge/check")
+async def check_daily(data: dict):
+    challenge = get_today_challenge()
+    completed = check_challenge_completion(challenge["id"], data)
+    if completed:
+        xp_gained = add_xp(challenge["xp"])
+        return {"completed": True, "xp_gained": xp_gained, "challenge": challenge}
+    return {"completed": False, "challenge": challenge}
+
+# ============================================
+# STORY MODE ENDPOINTS
+# ============================================
+
+@app.get("/api/story/{level_id}")
+async def get_story(level_id: int):
+    return get_story_for_level(level_id)
+
+@app.get("/api/chapters")
+async def get_chapters():
+    return {"chapters": get_all_chapters()}
+
+# ============================================
+# SKILL SCORES ENDPOINT
+# ============================================
+
+@app.get("/api/skills")
+async def get_skills():
+    return {"skills": compute_skill_scores()}
+
+# ============================================
+# THEME PREFERENCE ENDPOINT
+# ============================================
+
+_theme_pref = {"theme": "space"}
+
+@app.get("/api/theme")
+async def get_theme():
+    return _theme_pref
+
+@app.post("/api/theme")
+async def set_theme(data: dict):
+    _theme_pref["theme"] = data.get("theme", "space")
+    return _theme_pref
 
 
 if __name__ == "__main__":
