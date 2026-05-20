@@ -16,6 +16,9 @@ requests>=2.31.0
 # Hardware (for Arduino robot control)
 pyserial>=3.5
 
+# AI (Claude API for Lumi voice and parent reports)
+anthropic>=0.40.0
+
 # Development (optional)
 # pytest>=7.4.0
 # httpx>=0.25.0  # for testing async endpoints

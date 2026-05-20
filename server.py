@@ -13,8 +13,14 @@ from achievements import AchievementSystem
 from personality import PersonalitySystem
 from memory import MemorySystem
 from level_system import LevelSystem, ValidationResult
+from db import init_db, add_xp, save_mission_attempt, save_level_progress, get_level_progress, get_child_xp, get_parent_stats
+from esp32_bridge import robot_bridge
+import lumi_ai
 
 app = FastAPI()
+
+# Initialize DB on startup
+init_db()
 
 # Initialize components
 analyzer = MindAnalyzer()
@@ -22,7 +28,7 @@ logger = MissionLogger("lumi_mission_logs.json")
 question_system = GuidedQuestionSystem()
 achievement_system = AchievementSystem()
 personality_system = PersonalitySystem(default_mode="coach")
-memory_system = MemorySystem(max_history=3)
+memory_system = MemorySystem(max_history=100)
 level_system = LevelSystem()
 last_mistake_tag = None  # Track for questions
 
@@ -70,6 +76,11 @@ class RobotState:
         self.vitals = {"joy": 85, "focus": 40}
         self.sentiment = "curiosity"
         self.current_level_id = 1
+        self.robot_direction = 1  # 0=North, 1=East, 2=South, 3=West
+        self.xp = get_child_xp()
+        self.level_name = ""
+        self.stars_total = 0
+        self.achievement = None  # set when badge earned, cleared after broadcast
 
     def to_dict(self):
         data = {
@@ -86,7 +97,12 @@ class RobotState:
             "vitals": self.vitals,
             "sentiment": self.sentiment,
             "current_level_id": self.current_level_id,
-            "available_blocks": BLOCKS
+            "available_blocks": BLOCKS,
+            "robot_direction": self.robot_direction,
+            "xp": self.xp,
+            "level_name": self.level_name,
+            "stars_total": self.stars_total,
+            "achievement": self.achievement,
         }
         # Add current question if any
         q_data = question_system.get_current_question_data()
@@ -140,8 +156,10 @@ async def execute_commands():
 
         if cmd == 'turn_right':
             direction = (direction + 1) % 4
+            state.robot_direction = direction
         elif cmd == 'turn_left':
             direction = (direction - 1) % 4
+            state.robot_direction = direction
         elif cmd == 'forward':
             dx, dy = DIR_VECTORS[direction]
             nx, ny = x + dx, y + dy
@@ -151,6 +169,10 @@ async def execute_commands():
                 last_mistake_tag = "fell_off_edge"
                 state.status = "error"
                 logger.log_attempt(state.commands, "fail", duration_seconds=len(unrolled)*0.5, mistake_tag="fell_off_edge")
+                try:
+                    save_mission_attempt(state.current_level_id, 'fail', state.commands, 0, 0, len(unrolled)*0.5)
+                except Exception:
+                    pass
                 # Ask a guided question
                 q = question_system.get_question_for_state("error", "fell_off_edge")
                 state.feedback = q.text if q else "Oops! You went off the edge!"
@@ -163,6 +185,10 @@ async def execute_commands():
                 last_mistake_tag = "crashed_into_obstacle"
                 state.status = "error"
                 logger.log_attempt(state.commands, "fail", duration_seconds=len(unrolled)*0.5, mistake_tag="crashed_into_obstacle")
+                try:
+                    save_mission_attempt(state.current_level_id, 'fail', state.commands, 0, 0, len(unrolled)*0.5)
+                except Exception:
+                    pass
                 # Ask a guided question
                 q = question_system.get_question_for_state("error", "crashed_into_obstacle")
                 state.feedback = q.text if q else "Crash! You hit a rock!"
@@ -179,11 +205,13 @@ async def execute_commands():
 
     # Check goal
     result = "fail"
+    duration_sec = len(unrolled) * 0.5
+
     if x == state.goal["x"] and y == state.goal["y"]:
         state.status = "success"
         result = "success"
         last_mistake_tag = None
-        
+
         # Record level completion in LevelSystem
         completion_result = ValidationResult(
             success=True,
@@ -196,7 +224,17 @@ async def execute_commands():
             feedback="Perfect!"
         )
         level_system.record_completion(state.current_level_id, completion_result)
-        
+
+        # Award XP and persist to DB
+        try:
+            new_xp = add_xp(100)
+            state.xp = new_xp
+            state.stars_total = sum(level_system.progress.stars_earned.values())
+            save_mission_attempt(state.current_level_id, 'success', state.commands, 0, 3, duration_sec)
+            save_level_progress(state.current_level_id, 3, True, 1, state.commands)
+        except Exception:
+            pass
+
         # Record mission completion for achievements
         mission_badges = achievement_system.record_mission_complete()
         # Use personality-based success message
@@ -205,10 +243,16 @@ async def execute_commands():
         q = question_system.get_question_for_state("success")
         state.feedback = q.text if q else success_msg
         state.suggestion = q.hint if q else "Try the next demo!"
-        # Add badge celebration to feedback if earned
-        if mission_badges:
-            badge = mission_badges[0]
-            state.suggestion = f"{badge.icon} NEW BADGE: {badge.name}!"
+
+        # Pop first pending badge and expose it on state for the broadcast
+        pending = achievement_system.pop_pending_badge()
+        if pending:
+            state.achievement = pending
+            state.suggestion = f"{pending['icon']} NEW BADGE: {pending['name']}!"
+
+        # Trigger robot celebration asynchronously (fire-and-forget)
+        asyncio.create_task(robot_bridge.celebrate("lumi-bot-1"))
+
     else:
         state.status = "error"
         result = "partial"
@@ -217,11 +261,17 @@ async def execute_commands():
         q = question_system.get_question_for_state("partial", "missed_goal")
         state.feedback = q.text if q else "You didn't crash, but missed the goal!"
         state.suggestion = q.hint if q else "Adjust your path to reach the flag."
+        try:
+            save_mission_attempt(state.current_level_id, 'fail', state.commands, 0, 0, duration_sec)
+        except Exception:
+            pass
 
     # Log to analytics
-    logger.log_attempt(state.commands, result, duration_seconds=len(unrolled)*0.5)
+    logger.log_attempt(state.commands, result, duration_seconds=duration_sec)
 
     await broadcast_state()
+    # Clear achievement after it has been broadcast once
+    state.achievement = None
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -449,6 +499,44 @@ async def get_current_question():
         return {"question": q_data}
     return {"question": None}
 
+class QuestionAnswerInput(BaseModel):
+    answer_id: str
+
+@app.post("/api/question/answer")
+async def answer_question_new(answer: QuestionAnswerInput):
+    """Alias for /api/answer using answer_id (used by child UI)."""
+    result = question_system.process_answer(button_id=answer.answer_id)
+    is_correct = result.get("answer", {}).get("is_correct", False)
+    response_time = result.get("response_time_sec", 5)
+    response_confidence = result.get("response_confidence", "unknown")
+    memory_system.record(
+        interaction_type="answer",
+        is_correct=is_correct,
+        response_time_sec=response_time,
+        confidence=response_confidence,
+        context=last_mistake_tag or "general"
+    )
+    feedback = result["feedback"]
+    comparison = memory_system.get_comparison_feedback()
+    memory_prefix = memory_system.get_adaptive_prefix()
+    if comparison:
+        feedback = f"{feedback} {comparison}"
+    if memory_prefix and is_correct:
+        feedback = f"{memory_prefix}{feedback}"
+    state.feedback = feedback
+    state.suggestion = ""
+    badges = achievement_system.record_answer(
+        is_correct=is_correct,
+        response_time_sec=response_time
+    )
+    if badges:
+        b = badges[0]
+        state.achievement = {"id": b.id, "name": b.name, "icon": b.icon, "message": b.message}
+    await broadcast_state()
+    if state.achievement:
+        state.achievement = None
+    return {"speech": feedback, "is_correct": is_correct}
+
 @app.post("/api/hint")
 async def offer_hint():
     """Offer a hint based on current game state."""
@@ -593,7 +681,22 @@ async def reset_state():
 
 @app.get("/api/levels")
 async def get_levels():
-    """Get all levels with player progress."""
+    """Get all levels with player progress, merged with DB persistence."""
+    # Load DB progress to fill in any data that survived restarts
+    try:
+        db_progress = get_level_progress()
+    except Exception:
+        db_progress = {}
+
+    # Sync DB progress into in-memory level system (so unlocks work correctly)
+    for level_id, db_row in db_progress.items():
+        if db_row.get('completed'):
+            level_system.progress.completed_levels.add(level_id)
+        db_stars = db_row.get('stars', 0)
+        current_stars = level_system.progress.stars_earned.get(level_id, 0)
+        if db_stars > current_stars:
+            level_system.progress.stars_earned[level_id] = db_stars
+
     levels_data = []
     for level in level_system.get_all_levels():
         level_dict = level.to_dict()
@@ -602,6 +705,9 @@ async def get_levels():
         level_dict["stars"] = level_system.progress.stars_earned.get(level.level_id, 0)
         level_dict["best_solution"] = level_system.progress.best_solutions.get(level.level_id)
         level_dict["attempts"] = level_system.progress.attempts.get(level.level_id, 0)
+        # Overlay DB attempts if in-memory has none
+        if level_dict["attempts"] == 0 and level.level_id in db_progress:
+            level_dict["attempts"] = db_progress[level.level_id].get('attempts', 0)
         # Add chapter info
         if level.level_id <= 5:
             level_dict["chapter"] = 1
@@ -646,6 +752,8 @@ async def load_level(request: LevelLoadRequest):
     state.commands = []
     state.path = []
     state.status = "idle"
+    state.robot_direction = 1  # reset to East on new level
+    state.level_name = level.name
     state.feedback = f"Level {level.level_id}: {level.name}"
     state.suggestion = level.description
 
@@ -696,6 +804,65 @@ async def reset_level_progress():
     """Reset all level progress."""
     level_system.reset_progress()
     return {"success": True, "message": "Level progress reset"}
+
+
+# ============================================
+# ESP32 ROBOT WEBSOCKET
+# ============================================
+
+@app.websocket("/ws/robot")
+async def robot_ws(ws: WebSocket):
+    await ws.accept()
+    robot_id = None
+    try:
+        init_msg = await ws.receive_json()
+        robot_id = init_msg.get("robot_id", f"robot_{len(robot_bridge.list_robots())}")
+        await robot_bridge.register(robot_id, ws)
+        # Send acknowledgment
+        await ws.send_json({"type": "registered", "robot_id": robot_id})
+        while True:
+            data = await ws.receive_json()
+            robot_bridge.handle_message(robot_id, data)
+    except Exception:
+        pass
+    finally:
+        if robot_id:
+            await robot_bridge.unregister(robot_id)
+
+
+# ============================================
+# PARENT DASHBOARD ENDPOINTS
+# ============================================
+
+@app.get("/api/parent/stats")
+async def get_parent_dashboard():
+    """Get parent-facing stats for the default child."""
+    return get_parent_stats()
+
+
+@app.get("/api/parent/report")
+async def get_parent_report():
+    """Generate an AI parent report using Claude."""
+    stats = get_parent_stats()
+    report = await lumi_ai.generate_parent_report(stats)
+    return {"report": report, "stats": stats}
+
+
+# ============================================
+# ROBOT STATUS ENDPOINT
+# ============================================
+
+@app.get("/api/robots")
+async def list_robots():
+    """List connected ESP32 robots and their telemetry."""
+    return {
+        "robots": robot_bridge.list_robots(),
+        "telemetry": {
+            rid: robot_bridge.get_telemetry(rid)
+            for rid in robot_bridge.list_robots()
+        }
+    }
+
 
 if __name__ == "__main__":
     print("\n" + "="*50)

@@ -8,6 +8,7 @@ Awards badges based on:
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+from db import save_badge
 
 @dataclass
 class Badge:
@@ -228,11 +229,15 @@ class AchievementSystem:
         badge = BADGES.get(badge_id)
         if badge:
             self.pending_badges.append(badge)
+            try:
+                save_badge(badge_id)
+            except Exception:
+                pass  # Never crash the game because of a DB write failure
         return badge
 
     def get_pending_badges(self) -> List[Dict]:
-        """Get and clear pending badge notifications."""
-        badges = [
+        """Get pending badge notifications as full dicts (does NOT clear the list)."""
+        return [
             {
                 "id": b.id,
                 "name": b.name,
@@ -242,8 +247,19 @@ class AchievementSystem:
             }
             for b in self.pending_badges
         ]
-        self.pending_badges = []
-        return badges
+
+    def pop_pending_badge(self) -> Optional[Dict]:
+        """Return and remove the first pending badge, or None if none pending."""
+        if not self.pending_badges:
+            return None
+        badge = self.pending_badges.pop(0)
+        return {
+            "id": badge.id,
+            "name": badge.name,
+            "message": badge.message,
+            "icon": badge.icon,
+            "category": badge.category
+        }
 
     def get_all_badges(self) -> Dict:
         """Get all badges and which ones are earned."""
