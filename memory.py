@@ -1,13 +1,15 @@
 """
 Lumi Interaction Memory System
-Stores last 3 interactions to:
+Stores last 100 interactions to:
 - Compare improvement over time
 - Adjust feedback tone based on patterns
+- Persist to SQLite via db.py
 """
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from collections import deque
+from db import save_interaction, get_recent_interactions
 
 @dataclass
 class Interaction:
@@ -25,9 +27,28 @@ class Interaction:
 class MemorySystem:
     """Tracks recent interactions and detects patterns."""
 
-    def __init__(self, max_history: int = 3):
+    def __init__(self, max_history: int = 100, child_id: str = 'default'):
         self.history: deque = deque(maxlen=max_history)
+        self.child_id = child_id
         self.session_start = datetime.now().isoformat()
+
+        # Load last interactions from DB on startup
+        try:
+            past = get_recent_interactions(limit=max_history, child_id=child_id)
+            for row in past:
+                interaction = Interaction(
+                    timestamp=row.get('created_at', ''),
+                    type=row.get('type', 'answer'),
+                    is_correct=bool(row['is_correct']) if row.get('is_correct') is not None else None,
+                    response_time_sec=row.get('response_time_sec', 0) or 0,
+                    confidence=row.get('confidence', 'unknown') or 'unknown',
+                    explanation_quality=row.get('context', 'n/a') or 'n/a',
+                    context=row.get('context', 'general') or 'general',
+                    used_hint=bool(row.get('used_hint', 0))
+                )
+                self.history.append(interaction)
+        except Exception:
+            pass  # First run or DB not ready yet — start fresh
 
     def record(self,
                interaction_type: str,
@@ -37,7 +58,7 @@ class MemorySystem:
                explanation_quality: str = "n/a",
                context: str = "general",
                used_hint: bool = False):
-        """Record a new interaction."""
+        """Record a new interaction (in-memory + persisted to DB)."""
         interaction = Interaction(
             timestamp=datetime.now().isoformat(),
             type=interaction_type,
@@ -49,6 +70,20 @@ class MemorySystem:
             used_hint=used_hint
         )
         self.history.append(interaction)
+
+        # Persist to DB
+        try:
+            save_interaction(
+                type_=interaction_type,
+                is_correct=is_correct,
+                response_time_sec=response_time_sec,
+                confidence=confidence,
+                context=context,
+                used_hint=used_hint,
+                child_id=self.child_id
+            )
+        except Exception:
+            pass  # Never crash the game because of a DB write failure
 
     def get_history(self) -> List[Dict]:
         """Get interaction history as list of dicts."""
