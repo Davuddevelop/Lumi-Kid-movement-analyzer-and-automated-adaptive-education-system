@@ -118,7 +118,7 @@ function App() {
   );
 
   // ── Theme ──────────────────────────────────────────────────────────────────
-  const [theme, setTheme]           = useState(localStorage.getItem('lumi_theme') || 'space');
+  const [theme, setTheme]           = useState(localStorage.getItem('lumi_theme') || 'kids');
   const [showThemes, setShowThemes] = useState(false);
 
   useEffect(() => {
@@ -379,6 +379,15 @@ function App() {
 
       {/* ── TOP STRIP ──────────────────────────────────────────────────── */}
       <div className="top-strip">
+        {/* Rainbow LUMI logo */}
+        <div className="lumi-logo" aria-label="Lumi AI">
+          <span className="l1">L</span>
+          <span className="l2">U</span>
+          <span className="l3">M</span>
+          <span className="l4">I</span>
+          <span className="logo-ai">AI</span>
+        </div>
+
         {/* Stars */}
         <div className="top-strip-stars" aria-label={`${gameState.stars_total} stars`}>
           ⭐ {gameState.stars_total ?? 0}

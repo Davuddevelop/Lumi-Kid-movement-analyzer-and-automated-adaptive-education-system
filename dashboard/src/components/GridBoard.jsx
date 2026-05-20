@@ -50,18 +50,18 @@ const GridBoard = ({
 
   // Robot face based on status
   const robotFace = {
-    success:   '😊',
+    success:   '🤩',
     error:     '😵',
     fail:      '😵',
-    executing: '😶',
-  }[status] ?? '😐';
+    executing: '🤖',
+  }[status] ?? '🤖';
 
   const robotColor = {
-    success:   '#44e5a0',
+    success:   '#4caf82',
     error:     '#ff6b6b',
     fail:      '#ff6b6b',
-    executing: '#7c5cfc',
-  }[status] ?? '#a78bfa';
+    executing: '#1a6cf0',
+  }[status] ?? '#1a6cf0';
 
   // Position helpers — correct % calc, no magic pixels
   const cellW = 100 / width;
@@ -138,8 +138,9 @@ const GridBoard = ({
             <div
               className="robot-body"
               style={{
-                background: robotColor,
-                boxShadow: `0 8px 24px ${robotColor}88`,
+                background: status === 'error' || status === 'fail' ? '#ff6b6b' : 'white',
+                boxShadow: `0 6px 20px ${robotColor}55`,
+                border: `3px solid ${robotColor}`,
                 animation: status === 'executing' ? 'robotPulse 1s infinite' : 'none',
               }}
             >
