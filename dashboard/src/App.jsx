@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Map, Mic, MicOff, RefreshCw } from 'lucide-react';
+import { Map, Mic, MicOff, RefreshCw, Camera, Wifi } from 'lucide-react';
 import GridBoard        from './components/GridBoard';
 import LevelSelect      from './components/LevelSelect';
 import LumiAvatar       from './components/LumiAvatar';
@@ -12,6 +12,9 @@ import FocusMode        from './components/FocusMode';
 import DailyChallenge   from './components/DailyChallenge';
 import Onboarding       from './components/Onboarding';
 import ThemeSelector    from './components/ThemeSelector';
+import HomeScreen       from './components/HomeScreen';
+import CameraView       from './components/CameraView';
+import RobotSetup       from './components/RobotSetup';
 
 // ─── API config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -104,7 +107,13 @@ function useWebSocket(url, onMessage) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
   // ── Core view & game state ─────────────────────────────────────────────────
-  const [view, setView]           = useState('game');
+  const [view, setView]           = useState('home');
+  // ── Camera ─────────────────────────────────────────────────────────────────
+  const [showCamera, setShowCamera]     = useState(false);
+  const [cameraGranted, setCameraGranted] = useState(false);
+  // ── Robot / ESP32 setup ───────────────────────────────────────────────────
+  const [showRobotSetup, setShowRobotSetup] = useState(false);
+  const [robotIP, setRobotIP] = useState(localStorage.getItem('lumi_robot_ip') || '');
   const [gameState, setGameState] = useState(INITIAL_STATE);
   const [isListening, setIsListening] = useState(false);
   const [isRunning, setIsRunning]     = useState(false);
@@ -118,7 +127,7 @@ function App() {
   );
 
   // ── Theme ──────────────────────────────────────────────────────────────────
-  const [theme, setTheme]           = useState(localStorage.getItem('lumi_theme') || 'space');
+  const [theme, setTheme]           = useState(localStorage.getItem('lumi_theme') || 'kids');
   const [showThemes, setShowThemes] = useState(false);
 
   useEffect(() => {
@@ -304,6 +313,11 @@ function App() {
 
   const isExecutingOrRunning = isRunning || gameState.status === 'executing';
 
+  // ── Home screen ───────────────────────────────────────────────────────────
+  if (view === 'home') {
+    return <HomeScreen onStart={() => setView('game')} />;
+  }
+
   // ── Full-screen view renders ───────────────────────────────────────────────
   if (view === 'world_map') {
     return (
@@ -377,8 +391,33 @@ function App() {
         <FocusMode onClose={() => setShowFocus(false)} />
       )}
 
+      {/* ── CAMERA OVERLAY ─────────────────────────────────────────────── */}
+      {showCamera && (
+        <CameraView
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+
+      {/* ── ROBOT SETUP OVERLAY ────────────────────────────────────────── */}
+      {showRobotSetup && (
+        <RobotSetup
+          currentIP={robotIP}
+          onSave={(url) => { setRobotIP(url); setShowRobotSetup(false); }}
+          onSkip={() => setShowRobotSetup(false)}
+        />
+      )}
+
       {/* ── TOP STRIP ──────────────────────────────────────────────────── */}
       <div className="top-strip">
+        {/* Rainbow LUMI logo — click to go home */}
+        <div className="lumi-logo" aria-label="Lumi AI" onClick={() => setView('home')} style={{ cursor: 'pointer' }}>
+          <span className="l1">L</span>
+          <span className="l2">U</span>
+          <span className="l3">M</span>
+          <span className="l4">I</span>
+          <span className="logo-ai">AI</span>
+        </div>
+
         {/* Stars */}
         <div className="top-strip-stars" aria-label={`${gameState.stars_total} stars`}>
           ⭐ {gameState.stars_total ?? 0}
@@ -397,6 +436,27 @@ function App() {
             <div className="xp-bar-fill" style={{ width: `${xpPercent}%` }} />
           </div>
         </div>
+
+        {/* Camera button */}
+        <button
+          className={`cam-top-btn${cameraGranted ? ' cam-active' : ''}`}
+          onClick={() => setShowCamera(true)}
+          aria-label="Open camera scanner"
+          title="Camera Scanner"
+        >
+          <Camera size={18} />
+        </button>
+
+        {/* Robot / ESP32 button */}
+        <button
+          className={`robot-top-btn${robotIP ? ' robot-connected' : ''}`}
+          onClick={() => setShowRobotSetup(true)}
+          aria-label="Robot setup"
+          title="Connect Robot"
+        >
+          <Wifi size={18} />
+          {robotIP && <span className="robot-dot" />}
+        </button>
 
         {/* Focus button */}
         <button
