@@ -177,7 +177,11 @@ function App() {
   }, []);
 
   // ── WebSocket message handler ──────────────────────────────────────────────
+  // ── Robot WebSocket status (live from server) ─────────────────────────────
+  const [liveRobotStatus, setLiveRobotStatus] = useState({ connected: false, robots: [], telemetry: {} });
+
   const handleWsMessage = useCallback((newState) => {
+    if (newState.robot_status) setLiveRobotStatus(newState.robot_status);
     setGameState(prev => ({ ...prev, ...newState }));
 
     if (
@@ -402,6 +406,7 @@ function App() {
       {showRobotSetup && (
         <RobotSetup
           currentIP={robotIP}
+          robotStatus={liveRobotStatus}
           onSave={(url) => { setRobotIP(url); setShowRobotSetup(false); }}
           onSkip={() => setShowRobotSetup(false)}
         />
@@ -449,13 +454,16 @@ function App() {
 
         {/* Robot / ESP32 button */}
         <button
-          className={`robot-top-btn${robotIP ? ' robot-connected' : ''}`}
+          className={`robot-top-btn${liveRobotStatus.connected ? ' robot-connected' : ''}`}
           onClick={() => setShowRobotSetup(true)}
           aria-label="Robot setup"
-          title="Connect Robot"
+          title={liveRobotStatus.connected ? `${liveRobotStatus.robots.length} robot(s) connected` : 'Connect Robot'}
         >
           <Wifi size={18} />
-          {robotIP && <span className="robot-dot" />}
+          {liveRobotStatus.connected
+            ? <span className="robot-dot" style={{ background: '#4caf82' }} />
+            : robotIP && <span className="robot-dot" style={{ background: '#ffd166' }} />
+          }
         </button>
 
         {/* Focus button */}

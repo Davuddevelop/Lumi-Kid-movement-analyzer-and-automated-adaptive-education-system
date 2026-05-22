@@ -111,6 +111,15 @@ class RobotState:
         q_data = question_system.get_current_question_data()
         if q_data:
             data["question"] = q_data
+        # Include live robot status so dashboard can show connection badge
+        data["robot_status"] = {
+            "connected": len(robot_bridge.list_robots()) > 0,
+            "robots": robot_bridge.list_robots(),
+            "telemetry": {
+                rid: robot_bridge.get_telemetry(rid)
+                for rid in robot_bridge.list_robots()
+            },
+        }
         return data
 
 state = RobotState()
@@ -821,16 +830,21 @@ async def robot_ws(ws: WebSocket):
         init_msg = await ws.receive_json()
         robot_id = init_msg.get("robot_id", f"robot_{len(robot_bridge.list_robots())}")
         await robot_bridge.register(robot_id, ws)
-        # Send acknowledgment
         await ws.send_json({"type": "registered", "robot_id": robot_id})
+        # Notify dashboard clients of new robot
+        await broadcast_state()
         while True:
             data = await ws.receive_json()
             robot_bridge.handle_message(robot_id, data)
+            # Push telemetry updates to dashboard in real-time
+            if data.get("type") == "telemetry":
+                await broadcast_state()
     except Exception:
         pass
     finally:
         if robot_id:
             await robot_bridge.unregister(robot_id)
+            await broadcast_state()  # notify dashboard of disconnection
 
 
 # ============================================
@@ -866,6 +880,30 @@ async def list_robots():
             for rid in robot_bridge.list_robots()
         }
     }
+
+
+@app.post("/api/robots/{robot_id}/command")
+async def robot_direct_command(robot_id: str, body: dict):
+    """Send a single direct-control command to a robot (for testing from UI)."""
+    cmd = body.get("command", "")
+    VALID = {"forward", "turn_left", "turn_right", "celebrate", "stop"}
+    if cmd not in VALID:
+        return {"error": f"unknown command '{cmd}'", "valid": list(VALID)}
+    if cmd == "stop":
+        await robot_bridge.emergency_stop(robot_id)
+    elif cmd == "celebrate":
+        await robot_bridge.celebrate(robot_id)
+    else:
+        # fire-and-forget single move (non-blocking for the API response)
+        asyncio.create_task(robot_bridge.execute_sequence(robot_id, [cmd]))
+    return {"ok": True, "robot_id": robot_id, "command": cmd}
+
+
+@app.post("/api/robots/{robot_id}/stop")
+async def robot_stop(robot_id: str):
+    """Emergency stop a robot immediately."""
+    await robot_bridge.emergency_stop(robot_id)
+    return {"ok": True, "robot_id": robot_id}
 
 
 # ============================================
