@@ -15,6 +15,7 @@ import ThemeSelector    from './components/ThemeSelector';
 import HomeScreen       from './components/HomeScreen';
 import CameraView       from './components/CameraView';
 import RobotSetup       from './components/RobotSetup';
+import AIRobotPanel     from './components/AIRobotPanel';
 
 // ─── API config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -113,6 +114,7 @@ function App() {
   const [cameraGranted, setCameraGranted] = useState(false);
   // ── Robot / ESP32 setup ───────────────────────────────────────────────────
   const [showRobotSetup, setShowRobotSetup] = useState(false);
+  const [showAIPanel, setShowAIPanel]       = useState(false);
   const [robotIP, setRobotIP] = useState(localStorage.getItem('lumi_robot_ip') || '');
   const [gameState, setGameState] = useState(INITIAL_STATE);
   const [isListening, setIsListening] = useState(false);
@@ -412,6 +414,15 @@ function App() {
         />
       )}
 
+      {/* ── AI ROBOT PANEL OVERLAY ─────────────────────────────────────── */}
+      {showAIPanel && (
+        <AIRobotPanel
+          onClose={() => setShowAIPanel(false)}
+          robotStatus={liveRobotStatus}
+          gameState={gameState}
+        />
+      )}
+
       {/* ── TOP STRIP ──────────────────────────────────────────────────── */}
       <div className="top-strip">
         {/* Rainbow LUMI logo — click to go home */}
@@ -464,6 +475,16 @@ function App() {
             ? <span className="robot-dot" style={{ background: '#4caf82' }} />
             : robotIP && <span className="robot-dot" style={{ background: '#ffd166' }} />
           }
+        </button>
+
+        {/* AI Robot Control button */}
+        <button
+          className={`ai-panel-btn${liveRobotStatus.connected ? ' ai-panel-btn--active' : ''}`}
+          onClick={() => setShowAIPanel(true)}
+          aria-label="AI Robot Control"
+          title="AI Robot Control"
+        >
+          🧠
         </button>
 
         {/* Focus button */}

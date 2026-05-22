@@ -16,6 +16,7 @@ from level_system import LevelSystem, ValidationResult
 from db import init_db, add_xp, save_mission_attempt, save_level_progress, get_level_progress, get_child_xp, get_parent_stats
 from esp32_bridge import robot_bridge
 import lumi_ai
+from lumi_ai import bfs_plan_path, parse_robot_command, narrate_solution
 from daily_challenge import get_today_challenge, check_challenge_completion
 from story_system import get_story_for_level, get_all_chapters
 from skill_engine import compute_skill_scores
@@ -904,6 +905,81 @@ async def robot_stop(robot_id: str):
     """Emergency stop a robot immediately."""
     await robot_bridge.emergency_stop(robot_id)
     return {"ok": True, "robot_id": robot_id}
+
+
+# ============================================
+# AI ROBOT CONTROL ENDPOINTS
+# ============================================
+
+@app.post("/api/ai/command")
+async def ai_natural_command(body: dict):
+    """
+    Parse a natural-language instruction into robot commands using Claude,
+    then execute them on the grid simulation and the physical robot.
+    Body: {"text": "go forward 3 steps", "robot_id": "lumi-bot-1"}
+    """
+    text = body.get("text", "").strip()
+    robot_id = body.get("robot_id", "lumi-bot-1")
+    if not text:
+        return {"error": "empty text"}
+
+    grid = state.to_dict()
+    result = await parse_robot_command(text, grid)
+    commands = result.get("commands", [])
+    reply = result.get("reply", "")
+
+    if commands:
+        # Run on grid simulation
+        state.commands = commands
+        state.status = "idle"
+        state.robot_pos = state.start_pos.copy()
+        asyncio.create_task(execute_commands())
+
+        # Run on physical robot
+        if robot_bridge.is_connected(robot_id):
+            asyncio.create_task(robot_bridge.execute_sequence(robot_id, commands))
+
+        state.feedback = reply
+        await broadcast_state()
+
+    return {"commands": commands, "reply": reply, "ok": bool(commands)}
+
+
+@app.post("/api/ai/auto-solve")
+async def ai_auto_solve(body: dict):
+    """
+    BFS-plan the optimal path from the robot's current position to the goal,
+    generate a fun Claude narration, then execute on both grid and physical robot.
+    Body: {"robot_id": "lumi-bot-1"}
+    """
+    robot_id = body.get("robot_id", "lumi-bot-1")
+    grid = state.to_dict()
+
+    commands = bfs_plan_path(grid)
+    if commands is None:
+        return {"ok": False, "error": "No path found — the goal may be blocked!"}
+
+    narration = await narrate_solution(commands, grid)
+
+    # Execute on grid
+    state.commands = commands
+    state.status = "idle"
+    state.robot_pos = state.start_pos.copy()
+    asyncio.create_task(execute_commands())
+
+    # Execute on physical robot
+    if robot_bridge.is_connected(robot_id):
+        asyncio.create_task(robot_bridge.execute_sequence(robot_id, commands))
+
+    state.feedback = narration
+    await broadcast_state()
+
+    return {
+        "ok": True,
+        "commands": commands,
+        "steps": len(commands),
+        "narration": narration,
+    }
 
 
 # ============================================

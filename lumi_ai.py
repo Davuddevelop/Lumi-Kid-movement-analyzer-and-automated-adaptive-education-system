@@ -1,9 +1,10 @@
 """
-Lumi AI — Claude-powered voice and report generation for the Lumi educational platform.
-Provides child-friendly responses and parent-facing progress reports.
+Lumi AI — Claude-powered voice, robot control, and report generation.
 """
 import json
+import re
 import random
+from collections import deque
 import anthropic
 
 client = anthropic.Anthropic()
@@ -22,9 +23,74 @@ Rules:
 Respond ONLY with the spoken text. No quotes, no asterisks, just the words."""
 
 
-async def get_lumi_response(trigger: str, sentiment: str = "neutral", status: str = "idle",
-                            level_id: int = 1) -> str:
-    """Get a contextual Lumi response. Falls back to rule-based if API unavailable."""
+# ─── Grid helpers ────────────────────────────────────────────────────────────
+
+# direction vectors: 0=North, 1=East, 2=South, 3=West
+_DX = {0: 0,  1: 1, 2: 0,  3: -1}
+_DY = {0: -1, 1: 0, 2: 1,  3:  0}
+
+
+def bfs_plan_path(grid_state: dict) -> list[str] | None:
+    """
+    BFS shortest path (forward / turn_left / turn_right) from current robot
+    position+direction to the goal, avoiding obstacles and grid edges.
+    Returns a list of command strings, or None if no path exists.
+    """
+    W = grid_state["grid_size"]["width"]
+    H = grid_state["grid_size"]["height"]
+    obs = {(o["x"], o["y"]) for o in grid_state.get("obstacles", [])}
+    goal = (grid_state["goal"]["x"], grid_state["goal"]["y"])
+    sx = grid_state["robot_pos"]["x"]
+    sy = grid_state["robot_pos"]["y"]
+    sd = grid_state.get("robot_direction", 1)
+
+    start = (sx, sy, sd)
+    queue = deque([(start, [])])
+    visited = {start}
+
+    while queue:
+        (x, y, d), path = queue.popleft()
+        if (x, y) == goal:
+            return path
+
+        # turn left
+        nd = (d - 1) % 4
+        s = (x, y, nd)
+        if s not in visited:
+            visited.add(s)
+            queue.append((s, path + ["turn_left"]))
+
+        # turn right
+        nd = (d + 1) % 4
+        s = (x, y, nd)
+        if s not in visited:
+            visited.add(s)
+            queue.append((s, path + ["turn_right"]))
+
+        # forward
+        nx, ny = x + _DX[d], y + _DY[d]
+        if 0 <= nx < W and 0 <= ny < H and (nx, ny) not in obs:
+            s = (nx, ny, d)
+            if s not in visited:
+                visited.add(s)
+                queue.append((s, path + ["forward"]))
+
+    return None
+
+
+def _extract_json(text: str) -> dict:
+    """Pull first {...} block out of a Claude response."""
+    m = re.search(r"\{.*?\}", text, re.DOTALL)
+    if m:
+        return json.loads(m.group())
+    raise ValueError("No JSON found in response")
+
+
+# ─── Public AI functions ─────────────────────────────────────────────────────
+
+async def get_lumi_response(trigger: str, sentiment: str = "neutral",
+                            status: str = "idle", level_id: int = 1) -> str:
+    """Short child-friendly Lumi quip. Falls back to rule-based if API is down."""
     try:
         context = (
             f"Game status: {status}. Child feeling: {sentiment}. "
@@ -34,38 +100,75 @@ async def get_lumi_response(trigger: str, sentiment: str = "neutral", status: st
             model="claude-haiku-4-5-20251001",
             max_tokens=60,
             system=LUMI_SYSTEM,
-            messages=[{"role": "user", "content": context}]
+            messages=[{"role": "user", "content": context}],
         )
         return msg.content[0].text.strip()
     except Exception:
         return _fallback_response(trigger, status)
 
 
-def _fallback_response(trigger: str, status: str) -> str:
-    responses = {
-        "success": [
-            "You did it! Amazing! ⭐",
-            "Yes yes yes! You rock! \U0001f389",
-            "WOW! You're a robot wizard! ✨",
-        ],
-        "error": [
-            "Oops! Let's try again! \U0001f4aa",
-            "So close! One more try! \U0001f916",
-            "Don't give up! You got this! ⭐",
-        ],
-        "executing": [
-            "Here we go! \U0001f680",
-            "Robot is moving! \U0001f916",
-            "Watch what happens! \U0001f440",
-        ],
-        "idle": [
-            "Ready when you are! \U0001f31f",
-            "Place your blocks! \U0001f9f1",
-            "Let's build something cool! ✨",
-        ],
-    }
-    options = responses.get(status, responses["idle"])
-    return random.choice(options)
+async def parse_robot_command(text: str, grid_state: dict) -> dict:
+    """
+    Convert a natural-language robot instruction into a command list.
+    Returns {"commands": [...], "reply": "child-friendly explanation"}.
+    Falls back to empty list + error message if Claude is unavailable.
+    """
+    system = (
+        "You are a robot command parser for a children's toy robot on a grid.\n"
+        "Available commands: forward, turn_left, turn_right\n"
+        "Parse the user's request into the shortest correct sequence.\n"
+        "Return ONLY valid JSON — no markdown, no extra text:\n"
+        '{"commands": ["forward", ...], "reply": "one fun sentence for a 6-year-old"}\n\n'
+        "Examples:\n"
+        '  "go forward" → {"commands":["forward"],"reply":"Moving one step forward!"}\n'
+        '  "spin around" → {"commands":["turn_right","turn_right","turn_right","turn_right"],'
+        '"reply":"Spinning all the way around! 🌀"}\n'
+        '  "go forward twice then turn right" → {"commands":["forward","forward","turn_right"],'
+        '"reply":"Two steps forward then turning right!"}\n'
+        '  "help me reach the star" → let the grid state guide you'
+    )
+    prompt = (
+        f"Grid {grid_state['grid_size']['width']}×{grid_state['grid_size']['height']}, "
+        f"robot at ({grid_state['robot_pos']['x']},{grid_state['robot_pos']['y']}) "
+        f"facing {'N E S W'.split()[grid_state.get('robot_direction',1)]}, "
+        f"goal at ({grid_state['goal']['x']},{grid_state['goal']['y']}).\n"
+        f"User says: \"{text}\""
+    )
+    try:
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=200,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return _extract_json(msg.content[0].text)
+    except Exception as e:
+        return {"commands": [], "reply": f"I didn't understand that — try again! 🤔 ({e})"}
+
+
+async def narrate_solution(commands: list[str], grid_state: dict) -> str:
+    """
+    Generate a short, fun, child-friendly story about what the robot is about to do.
+    Used to announce the auto-solve sequence.
+    """
+    try:
+        summary = ", ".join(commands) if commands else "nothing"
+        prompt = (
+            f"A toy robot is about to do: {summary}\n"
+            f"It starts at ({grid_state['robot_pos']['x']},{grid_state['robot_pos']['y']}) "
+            f"and the goal is at ({grid_state['goal']['x']},{grid_state['goal']['y']}).\n"
+            "Write ONE sentence (max 20 words) for a 6-year-old that makes this sound exciting."
+        )
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=60,
+            system=LUMI_SYSTEM,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return msg.content[0].text.strip()
+    except Exception:
+        n = len(commands)
+        return f"I found the way! {n} move{'s' if n != 1 else ''} to the star! ⭐"
 
 
 async def generate_parent_report(stats: dict) -> str:
@@ -79,11 +182,10 @@ async def generate_parent_report(stats: dict) -> str:
             "3. Two specific suggestions for next week\n\n"
             "Keep it friendly, avoid jargon, max 200 words."
         )
-
         msg = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=400,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
         return msg.content[0].text.strip()
     except Exception:
@@ -91,3 +193,15 @@ async def generate_parent_report(stats: dict) -> str:
             f"Your child completed {stats.get('total_missions', 0)} missions this week "
             f"with {stats.get('success_rate', 0)}% success. Keep up the great work!"
         )
+
+
+# ─── Rule-based fallback ──────────────────────────────────────────────────────
+
+def _fallback_response(trigger: str, status: str) -> str:
+    responses = {
+        "success":   ["You did it! Amazing! ⭐", "Yes yes yes! You rock! 🎉", "WOW! You're a robot wizard! ✨"],
+        "error":     ["Oops! Let's try again! 💪", "So close! One more try! 🤖", "Don't give up! You got this! ⭐"],
+        "executing": ["Here we go! 🚀", "Robot is moving! 🤖", "Watch what happens! 👀"],
+        "idle":      ["Ready when you are! 🌟", "Place your blocks! 🧱", "Let's build something cool! ✨"],
+    }
+    return random.choice(responses.get(status, responses["idle"]))

@@ -1637,7 +1637,7 @@ body {
 }
 
 /* Camera & Robot top strip buttons */
-.cam-top-btn, .robot-top-btn {
+.cam-top-btn, .robot-top-btn, .ai-panel-btn {
   background: none; border: 2px solid var(--border-color);
   color: var(--text-muted); border-radius: 12px;
   min-height: 42px; min-width: 42px;
@@ -1645,11 +1645,12 @@ body {
   display: flex; align-items: center; justify-content: center;
   transition: all 0.2s; position: relative;
 }
-.cam-top-btn:hover, .robot-top-btn:hover {
+.cam-top-btn:hover, .robot-top-btn:hover, .ai-panel-btn:hover {
   color: var(--primary); border-color: rgba(26,108,240,0.3);
   background: rgba(26,108,240,0.06);
 }
 .cam-active { color: #4caf82 !important; border-color: #4caf82 !important; background: rgba(76,175,130,0.08) !important; }
+.ai-panel-btn--active { color: #a855f7 !important; border-color: #a855f7 !important; background: rgba(168,85,247,0.08) !important; }
 .robot-connected { color: #4caf82 !important; border-color: #4caf82 !important; }
 .robot-dot {
   position: absolute; top: 6px; right: 6px;
