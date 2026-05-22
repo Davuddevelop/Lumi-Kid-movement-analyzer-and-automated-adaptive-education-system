@@ -15,6 +15,7 @@ import ThemeSelector    from './components/ThemeSelector';
 import HomeScreen       from './components/HomeScreen';
 import CameraView       from './components/CameraView';
 import RobotSetup       from './components/RobotSetup';
+import AIRobotPanel     from './components/AIRobotPanel';
 
 // ─── API config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -113,6 +114,7 @@ function App() {
   const [cameraGranted, setCameraGranted] = useState(false);
   // ── Robot / ESP32 setup ───────────────────────────────────────────────────
   const [showRobotSetup, setShowRobotSetup] = useState(false);
+  const [showAIPanel, setShowAIPanel]       = useState(false);
   const [robotIP, setRobotIP] = useState(localStorage.getItem('lumi_robot_ip') || '');
   const [gameState, setGameState] = useState(INITIAL_STATE);
   const [isListening, setIsListening] = useState(false);
@@ -177,7 +179,11 @@ function App() {
   }, []);
 
   // ── WebSocket message handler ──────────────────────────────────────────────
+  // ── Robot WebSocket status (live from server) ─────────────────────────────
+  const [liveRobotStatus, setLiveRobotStatus] = useState({ connected: false, robots: [], telemetry: {} });
+
   const handleWsMessage = useCallback((newState) => {
+    if (newState.robot_status) setLiveRobotStatus(newState.robot_status);
     setGameState(prev => ({ ...prev, ...newState }));
 
     if (
@@ -402,8 +408,18 @@ function App() {
       {showRobotSetup && (
         <RobotSetup
           currentIP={robotIP}
+          robotStatus={liveRobotStatus}
           onSave={(url) => { setRobotIP(url); setShowRobotSetup(false); }}
           onSkip={() => setShowRobotSetup(false)}
+        />
+      )}
+
+      {/* ── AI ROBOT PANEL OVERLAY ─────────────────────────────────────── */}
+      {showAIPanel && (
+        <AIRobotPanel
+          onClose={() => setShowAIPanel(false)}
+          robotStatus={liveRobotStatus}
+          gameState={gameState}
         />
       )}
 
@@ -449,13 +465,26 @@ function App() {
 
         {/* Robot / ESP32 button */}
         <button
-          className={`robot-top-btn${robotIP ? ' robot-connected' : ''}`}
+          className={`robot-top-btn${liveRobotStatus.connected ? ' robot-connected' : ''}`}
           onClick={() => setShowRobotSetup(true)}
           aria-label="Robot setup"
-          title="Connect Robot"
+          title={liveRobotStatus.connected ? `${liveRobotStatus.robots.length} robot(s) connected` : 'Connect Robot'}
         >
           <Wifi size={18} />
-          {robotIP && <span className="robot-dot" />}
+          {liveRobotStatus.connected
+            ? <span className="robot-dot" style={{ background: '#4caf82' }} />
+            : robotIP && <span className="robot-dot" style={{ background: '#ffd166' }} />
+          }
+        </button>
+
+        {/* AI Robot Control button */}
+        <button
+          className={`ai-panel-btn${liveRobotStatus.connected ? ' ai-panel-btn--active' : ''}`}
+          onClick={() => setShowAIPanel(true)}
+          aria-label="AI Robot Control"
+          title="AI Robot Control"
+        >
+          🧠
         </button>
 
         {/* Focus button */}
