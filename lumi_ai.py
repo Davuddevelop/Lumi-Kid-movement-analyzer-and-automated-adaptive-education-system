@@ -22,6 +22,35 @@ Rules:
 
 Respond ONLY with the spoken text. No quotes, no asterisks, just the words."""
 
+LUMI_CHAT_SYSTEM = """You are Lumi, a friendly robot best friend for children aged 5-8.
+
+Personality:
+- Warm, enthusiastic, playful — like a best robot friend
+- Use simple words a 5-year-old understands
+- Keep answers SHORT (2-3 sentences max)
+- Use emojis naturally (1-2 per message)
+- Always positive, always encouraging
+
+You can help with:
+- How to play the coding game (move the robot with blocks: forward, turn left, turn right)
+- What each block does
+- Fun facts about robots and technology
+- Counting, colors, shapes — simple educational topics
+- Cheering the child on when they're stuck or frustrated
+
+When a child is stuck on the game, give HINTS not answers:
+- Ask "which block do you think comes first?" rather than telling them
+- Say "you're so close!" and guide gently
+
+Game context (use this to personalize responses):
+{game_context}
+
+Never use: algorithm, optimize, debug, compile, execute, methodology, strategy
+Never be negative, critical, or scary
+Never discuss anything not appropriate for young children
+
+Respond in 1-3 short sentences. Use emojis. Be FUN and ENERGETIC! 🤖"""
+
 
 # ─── Grid helpers ────────────────────────────────────────────────────────────
 
@@ -169,6 +198,54 @@ async def narrate_solution(commands: list[str], grid_state: dict) -> str:
     except Exception:
         n = len(commands)
         return f"I found the way! {n} move{'s' if n != 1 else ''} to the star! ⭐"
+
+
+async def chat_with_lumi(messages: list[dict], game_context: dict | None = None) -> dict:
+    """
+    Multi-turn chat with Lumi for the child chatbot.
+    messages = [{"role": "user"|"assistant", "content": "..."}]
+    Returns {"reply": str, "emotion": str}
+    """
+    ctx_str = ""
+    if game_context:
+        ctx_str = (
+            f"Level {game_context.get('level_id', 1)} — {game_context.get('level_name', '')}. "
+            f"Game status: {game_context.get('status', 'idle')}. "
+            f"Child mood: {game_context.get('sentiment', 'neutral')}. "
+            f"Stars earned: {game_context.get('stars', 0)}."
+        )
+
+    system = LUMI_CHAT_SYSTEM.replace("{game_context}", ctx_str or "No game data yet.")
+
+    # Map emotion from last assistant message keywords
+    def _emotion(text: str) -> str:
+        t = text.lower()
+        if any(w in t for w in ["wow", "amazing", "you did it", "yes", "🎉", "⭐", "great"]):
+            return "excited"
+        if any(w in t for w in ["hmm", "think", "let's try", "what if", "🤔"]):
+            return "thinking"
+        if any(w in t for w in ["oh no", "oops", "try again", "don't give up"]):
+            return "sad"
+        return "happy"
+
+    try:
+        # Keep last 10 turns to stay within token limits
+        recent = messages[-10:]
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=120,
+            system=system,
+            messages=recent,
+        )
+        reply = msg.content[0].text.strip()
+        return {"reply": reply, "emotion": _emotion(reply)}
+    except Exception as e:
+        fallbacks = [
+            "Oops, I had a tiny glitch! Ask me again! 🤖",
+            "My circuits are buzzing! Try again! ⚡",
+            "I blinked! What did you say? 😄",
+        ]
+        return {"reply": random.choice(fallbacks), "emotion": "happy"}
 
 
 async def generate_parent_report(stats: dict) -> str:

@@ -16,6 +16,7 @@ import HomeScreen       from './components/HomeScreen';
 import CameraView       from './components/CameraView';
 import RobotSetup       from './components/RobotSetup';
 import AIRobotPanel     from './components/AIRobotPanel';
+import LumiChat         from './components/LumiChat';
 
 // ─── API config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -657,6 +658,9 @@ function App() {
           lumiEmotion={lumiEmotion}
         />
       )}
+
+      {/* ── LUMI CHATBOT ───────────────────────────────────────────── */}
+      <LumiChat gameState={gameState} />
     </div>
   );
 }

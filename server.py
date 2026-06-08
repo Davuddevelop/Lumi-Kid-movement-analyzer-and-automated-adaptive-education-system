@@ -349,6 +349,22 @@ async def load_demo():
     await broadcast_state()
     return {"message": f"Loaded: {demo['name']}"}
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+    game_context: Optional[Dict] = None
+
+@app.post("/api/chat")
+async def chat(req: ChatRequest):
+    """Multi-turn Lumi chatbot endpoint for the child chat UI."""
+    messages = [{"role": m.role, "content": m.content} for m in req.messages]
+    result = await lumi_ai.chat_with_lumi(messages, req.game_context)
+    return result
+
+
 class VoiceInput(BaseModel):
     text: str
 
