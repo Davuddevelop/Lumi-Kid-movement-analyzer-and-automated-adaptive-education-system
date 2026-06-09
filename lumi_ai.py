@@ -1,6 +1,7 @@
 """
 Lumi AI — Claude-powered voice, robot control, and report generation.
 """
+import asyncio
 import json
 import re
 import random
@@ -8,6 +9,11 @@ from collections import deque
 import anthropic
 
 client = anthropic.Anthropic()
+
+
+async def _call_claude(**kwargs):
+    """Run the sync Anthropic client in a thread pool — keeps the event loop free."""
+    return await asyncio.to_thread(client.messages.create, **kwargs)
 
 LUMI_SYSTEM = """You are Lumi, a warm, enthusiastic robot companion for children aged 5-8.
 
@@ -125,7 +131,7 @@ async def get_lumi_response(trigger: str, sentiment: str = "neutral",
             f"Game status: {status}. Child feeling: {sentiment}. "
             f"Level: {level_id}. Situation: {trigger}"
         )
-        msg = client.messages.create(
+        msg = await _call_claude(
             model="claude-haiku-4-5-20251001",
             max_tokens=60,
             system=LUMI_SYSTEM,
@@ -164,7 +170,7 @@ async def parse_robot_command(text: str, grid_state: dict) -> dict:
         f"User says: \"{text}\""
     )
     try:
-        msg = client.messages.create(
+        msg = await _call_claude(
             model="claude-haiku-4-5-20251001",
             max_tokens=200,
             system=system,
@@ -188,7 +194,7 @@ async def narrate_solution(commands: list[str], grid_state: dict) -> str:
             f"and the goal is at ({grid_state['goal']['x']},{grid_state['goal']['y']}).\n"
             "Write ONE sentence (max 20 words) for a 6-year-old that makes this sound exciting."
         )
-        msg = client.messages.create(
+        msg = await _call_claude(
             model="claude-haiku-4-5-20251001",
             max_tokens=60,
             system=LUMI_SYSTEM,
@@ -229,9 +235,14 @@ async def chat_with_lumi(messages: list[dict], game_context: dict | None = None)
         return "happy"
 
     try:
-        # Keep last 10 turns to stay within token limits
+        # Keep last 10 turns; Anthropic API requires messages start with 'user'
         recent = messages[-10:]
-        msg = client.messages.create(
+        while recent and recent[0]["role"] != "user":
+            recent = recent[1:]
+        if not recent:
+            return {"reply": "Ask me anything! I'm here to help! 🤖", "emotion": "happy"}
+
+        msg = await _call_claude(
             model="claude-haiku-4-5-20251001",
             max_tokens=120,
             system=system,
@@ -239,7 +250,7 @@ async def chat_with_lumi(messages: list[dict], game_context: dict | None = None)
         )
         reply = msg.content[0].text.strip()
         return {"reply": reply, "emotion": _emotion(reply)}
-    except Exception as e:
+    except Exception:
         fallbacks = [
             "Oops, I had a tiny glitch! Ask me again! 🤖",
             "My circuits are buzzing! Try again! ⚡",
@@ -259,7 +270,7 @@ async def generate_parent_report(stats: dict) -> str:
             "3. Two specific suggestions for next week\n\n"
             "Keep it friendly, avoid jargon, max 200 words."
         )
-        msg = client.messages.create(
+        msg = await _call_claude(
             model="claude-sonnet-4-6",
             max_tokens=400,
             messages=[{"role": "user", "content": prompt}],
