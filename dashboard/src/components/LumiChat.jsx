@@ -119,8 +119,7 @@ function getGreeting(gameState) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function LumiChat({ gameState }) {
-  const [open, setOpen]       = useState(false);
+export default function LumiChat({ gameState, open, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput]     = useState('');
   const [loading, setLoading] = useState(false);
@@ -138,7 +137,7 @@ export default function LumiChat({ gameState }) {
 
   useEffect(() => { messagesRef.current = messages; }, [messages]);
   useEffect(() => { loadingRef.current  = loading; },  [loading]);
-  useEffect(() => { openRef.current     = open; },     [open]);
+  useEffect(() => { openRef.current     = open;    },  [open]);
 
   // Set greeting once when the panel first opens
   useEffect(() => {
@@ -153,7 +152,7 @@ export default function LumiChat({ gameState }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Focus input on open
+  // Focus input on open; reset unread
   useEffect(() => {
     if (open) {
       setUnread(0);
@@ -265,12 +264,6 @@ export default function LumiChat({ gameState }) {
           70%  { transform: scale(1.25); }
           100% { transform: scale(1); }
         }
-        @keyframes lumiFabPulse {
-          0%, 100% { box-shadow: 0 4px 16px rgba(102,126,234,0.45); }
-          50%      { box-shadow: 0 4px 28px rgba(102,126,234,0.75); }
-        }
-        .lumi-fab-btn { transition: transform 0.18s ease; }
-        .lumi-fab-btn:hover { transform: scale(1.1) !important; }
         .lumi-chip { transition: all 0.15s ease; }
         .lumi-chip:hover { background: #667eea !important; color: #fff !important; transform: translateY(-1px); }
         .lumi-input:focus { outline: 2px solid #667eea; border-color: transparent; }
@@ -280,46 +273,15 @@ export default function LumiChat({ gameState }) {
         .lumi-msg-list::-webkit-scrollbar-thumb { background: #c4b5f0; border-radius: 4px; }
       `}</style>
 
-      {/* ── FAB ── positioned above action-bar (action-bar ≈ 68px tall) */}
-      <button
-        className="lumi-fab-btn"
-        onClick={() => setOpen(o => !o)}
-        aria-label={open ? 'Close Lumi chat' : 'Chat with Lumi'}
-        style={{
-          position: 'fixed', bottom: 88, right: 18, zIndex: 1300,
-          width: 58, height: 58, borderRadius: '50%',
-          border: 'none', cursor: 'pointer', padding: 0,
-          background: 'linear-gradient(135deg, #667eea, #764ba2)',
-          animation: open ? 'none' : 'lumiFabPulse 2.5s infinite',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        {open
-          ? <span style={{ color: '#fff', fontSize: 22, fontWeight: 700 }}>✕</span>
-          : <LumiFace emotion={emotion} size={42} pulse={false} />
-        }
-        {!open && unread > 0 && (
-          <span style={{
-            position: 'absolute', top: -2, right: -2,
-            background: '#ff4757', color: '#fff',
-            borderRadius: '50%', minWidth: 20, height: 20,
-            fontSize: 11, fontWeight: 700,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '0 4px',
-            animation: 'lumiBadgePop 0.3s ease',
-          }}>{unread > 9 ? '9+' : unread}</span>
-        )}
-      </button>
-
-      {/* ── Chat panel ── */}
+      {/* ── Chat panel — rendered as fixed overlay, triggered by top-strip button ── */}
       {open && (
         <div style={{
           position: 'fixed',
-          bottom: 158,   // 88px FAB bottom + 58px FAB height + 12px gap
+          bottom: 90,   /* sits above the action bar */
           right: 16,
           zIndex: 1290,
           width: 'min(348px, calc(100vw - 28px))',
-          height: 'min(500px, calc(100vh - 180px))',
+          height: 'min(500px, calc(100vh - 140px))',
           background: 'var(--surface, #ffffff)',
           borderRadius: 22,
           boxShadow: '0 10px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
@@ -353,6 +315,16 @@ export default function LumiChat({ gameState }) {
                 flexShrink: 0,
               }}
             >🗑️ Clear</button>
+            <button
+              onClick={onClose}
+              title="Close chat"
+              style={{
+                background: 'rgba(255,255,255,0.14)', border: 'none',
+                color: '#fff', borderRadius: 8, padding: '4px 9px',
+                cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >✕</button>
           </div>
 
           {/* Messages */}

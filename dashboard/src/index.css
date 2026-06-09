@@ -5,48 +5,48 @@
    ============================================================ */
 :root {
   /* Backgrounds */
-  --bg-space:   #faf6ef;
-  --bg-deep:    #f0ebe0;
-  --bg-mid:     #e8e0cf;
-  --bg-surface: #ffffff;
-  --border-color: #ede8df;
+  --bg-space:   #EFF3FF;
+  --bg-deep:    #E5EAFF;
+  --bg-mid:     #D8E0FF;
+  --bg-surface: #FFFFFF;
+  --border-color: #C8D0F0;
 
   /* Glass (now means soft card) */
   --glass-bg:        rgba(255, 255, 255, 0.97);
   --glass-border:    rgba(0, 0, 0, 0.08);
   --glass-highlight: rgba(255, 255, 255, 1);
 
-  /* Brand blue */
-  --primary:       #1a6cf0;
-  --primary-glow:  rgba(26, 108, 240, 0.2);
-  --primary-dark:  #1255c4;
+  /* Brand purple-blue */
+  --primary:       #5B4FE8;
+  --primary-glow:  rgba(91, 79, 232, 0.25);
+  --primary-dark:  #4338CA;
 
   /* Accent palette */
-  --secondary:      #ffd166;
-  --secondary-glow: rgba(255, 209, 102, 0.35);
-  --coral:          #ff6b6b;
-  --coral-glow:     rgba(255, 107, 107, 0.25);
-  --cyan:           #22c9d5;
-  --cyan-glow:      rgba(34, 201, 213, 0.25);
-  --mint:           #4caf82;
-  --mint-glow:      rgba(76, 175, 130, 0.25);
+  --secondary:      #FFD43B;
+  --secondary-glow: rgba(255, 212, 59, 0.4);
+  --coral:          #FF5252;
+  --coral-glow:     rgba(255, 82, 82, 0.3);
+  --cyan:           #00BCD4;
+  --cyan-glow:      rgba(0, 188, 212, 0.25);
+  --mint:           #00C853;
+  --mint-glow:      rgba(0, 200, 83, 0.3);
   --orange:         #ff9f43;
   --orange-glow:    rgba(255, 159, 67, 0.25);
 
   /* Semantic */
-  --success:      #4caf82;
-  --success-dark: #388e5e;
-  --error:        #ff6b6b;
+  --success:      #00C853;
+  --success-dark: #00A041;
+  --error:        #FF5252;
   --error-dark:   #d94040;
-  --executing:    #1a6cf0;
+  --executing:    #5B4FE8;
 
   /* Text */
-  --text-main:  #1a1a2e;
-  --text-muted: #6b7280;
+  --text-main:  #1E1B4B;
+  --text-muted: #6B7BAE;
 
-  --card-shadow:  0 4px 20px rgba(0, 0, 0, 0.07);
+  --card-shadow:  0 6px 24px rgba(91, 79, 232, 0.12);
   --panel-radius: 24px;
-  --touch-min:    60px;
+  --touch-min:    56px;
 }
 
 /* ============================================================
@@ -57,11 +57,8 @@ html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
 
 body {
   font-family: 'Nunito', sans-serif;
-  background: var(--bg-space);
-  background-image:
-    radial-gradient(circle at 8% 12%, rgba(255, 209, 102, 0.18) 0%, transparent 35%),
-    radial-gradient(circle at 92% 85%, rgba(26, 108, 240, 0.10) 0%, transparent 35%),
-    radial-gradient(circle at 50% 50%, rgba(76, 175, 130, 0.06) 0%, transparent 55%);
+  background: linear-gradient(160deg, #EEF2FF 0%, #F5EEFF 45%, #FFF0F5 100%);
+  background-attachment: fixed;
   color: var(--text-main);
   min-height: 100vh;
   font-size: 1.1rem;
@@ -107,11 +104,11 @@ body {
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: var(--bg-surface);
-  border-bottom: 2px solid var(--border-color);
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 60%, #A855F7 100%);
+  border-bottom: none;
   flex-shrink: 0;
   min-height: 64px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 28px rgba(79, 70, 229, 0.38);
 }
 
 /* Rainbow LUMI AI logo */

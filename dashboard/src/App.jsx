@@ -168,6 +168,7 @@ function App() {
 
   // ── Focus mode ─────────────────────────────────────────────────────────────
   const [showFocus, setShowFocus] = useState(false);
+  const [showLumiChat, setShowLumiChat] = useState(false);
 
   // ── TTS ────────────────────────────────────────────────────────────────────
   const speak = useCallback((text) => {
@@ -488,6 +489,16 @@ function App() {
           🧠
         </button>
 
+        {/* Lumi Chat button */}
+        <button
+          className={`cam-top-btn chat-top-btn${showLumiChat ? ' chat-top-btn--active' : ''}`}
+          onClick={() => setShowLumiChat(o => !o)}
+          aria-label={showLumiChat ? 'Close Lumi chat' : 'Chat with Lumi'}
+          title="Chat with Lumi"
+        >
+          💬
+        </button>
+
         {/* Focus button */}
         <button
           className="focus-btn"
@@ -660,7 +671,11 @@ function App() {
       )}
 
       {/* ── LUMI CHATBOT ───────────────────────────────────────────── */}
-      <LumiChat gameState={gameState} />
+      <LumiChat
+        open={showLumiChat}
+        onClose={() => setShowLumiChat(false)}
+        gameState={gameState}
+      />
     </div>
   );
 }
