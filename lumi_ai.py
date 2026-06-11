@@ -3,16 +3,30 @@ Lumi AI — Claude-powered voice, robot control, and report generation.
 """
 import asyncio
 import json
-import re
+import logging
+import os
 import random
 from collections import deque
 import anthropic
 
-client = anthropic.Anthropic()
+_log = logging.getLogger(__name__)
+
+# Without a key every call would hang until timeout before falling back —
+# detect once at import so fallbacks fire instantly instead.
+AI_ENABLED = bool(os.environ.get("ANTHROPIC_API_KEY"))
+if not AI_ENABLED:
+    _log.warning(
+        "ANTHROPIC_API_KEY is not set — Lumi AI runs in fallback mode "
+        "(rule-based responses only). Set the key to enable Claude."
+    )
+
+client = anthropic.Anthropic(timeout=15.0, max_retries=1) if AI_ENABLED else None
 
 
 async def _call_claude(**kwargs):
     """Run the sync Anthropic client in a thread pool — keeps the event loop free."""
+    if client is None:
+        raise RuntimeError("AI disabled: ANTHROPIC_API_KEY not set")
     return await asyncio.to_thread(client.messages.create, **kwargs)
 
 LUMI_SYSTEM = """You are Lumi, a warm, enthusiastic robot companion for children aged 5-8.
@@ -114,10 +128,18 @@ def bfs_plan_path(grid_state: dict) -> list[str] | None:
 
 
 def _extract_json(text: str) -> dict:
-    """Pull first {...} block out of a Claude response."""
-    m = re.search(r"\{.*?\}", text, re.DOTALL)
-    if m:
-        return json.loads(m.group())
+    """Pull the first complete JSON object out of a Claude response.
+    Handles nested braces and surrounding prose, unlike a naive regex."""
+    decoder = json.JSONDecoder()
+    idx = text.find("{")
+    while idx != -1:
+        try:
+            obj, _ = decoder.raw_decode(text, idx)
+            if isinstance(obj, dict):
+                return obj
+        except json.JSONDecodeError:
+            pass
+        idx = text.find("{", idx + 1)
     raise ValueError("No JSON found in response")
 
 
@@ -206,6 +228,53 @@ async def narrate_solution(commands: list[str], grid_state: dict) -> str:
         return f"I found the way! {n} move{'s' if n != 1 else ''} to the star! ⭐"
 
 
+_HINT_TEMPLATES = {
+    "forward":    ["Try moving forward! The path ahead is clear! 👣",
+                   "One step forward gets you closer! 🟢"],
+    "turn_left":  ["Hmm, which way is the star? Try turning left! ↺",
+                   "The star isn't in front of you — turn left and look! 🟡"],
+    "turn_right": ["Try turning right — something shiny is that way! ↻",
+                   "Turn right and see what you find! 🔵"],
+}
+
+
+async def generate_smart_hint(grid_state: dict, mistake_tag: str | None = None) -> dict:
+    """
+    Grid-aware hint: BFS computes the real optimal path, then Claude phrases
+    a gentle nudge about the FIRST move only (never the full answer).
+    Returns {"hint": str, "next_move": str|None, "moves_remaining": int|None}.
+    """
+    path = bfs_plan_path(grid_state)
+    if not path:
+        return {
+            "hint": "Hmm, this one is tricky! Try the reset button and start fresh! 🔄",
+            "next_move": None, "moves_remaining": None,
+        }
+
+    next_move = path[0]
+    n = len(path)
+
+    try:
+        mistake = f" The child just made this mistake: {mistake_tag}." if mistake_tag else ""
+        prompt = (
+            f"A child's robot needs to reach a star. The correct next move is: {next_move}. "
+            f"The full solution takes {n} more moves.{mistake}\n"
+            "Give ONE gentle hint (max 15 words) that nudges toward that next move "
+            "WITHOUT saying the exact command. Make the child think and feel smart."
+        )
+        msg = await _call_claude(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=60,
+            system=LUMI_SYSTEM,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        hint = msg.content[0].text.strip()
+    except Exception:
+        hint = random.choice(_HINT_TEMPLATES.get(next_move, _HINT_TEMPLATES["forward"]))
+
+    return {"hint": hint, "next_move": next_move, "moves_remaining": n}
+
+
 async def chat_with_lumi(messages: list[dict], game_context: dict | None = None) -> dict:
     """
     Multi-turn chat with Lumi for the child chatbot.
@@ -220,6 +289,9 @@ async def chat_with_lumi(messages: list[dict], game_context: dict | None = None)
             f"Child mood: {game_context.get('sentiment', 'neutral')}. "
             f"Stars earned: {game_context.get('stars', 0)}."
         )
+        history = game_context.get("history")
+        if history:
+            ctx_str += f" Child history: {history}"
 
     system = LUMI_CHAT_SYSTEM.replace("{game_context}", ctx_str or "No game data yet.")
 
