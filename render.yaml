@@ -1,0 +1,15 @@
+# Render.com deployment config for the Lumi backend (FastAPI + WebSockets).
+# Render's free tier supports WebSockets, which Railway/Vercel functions don't
+# handle as cleanly — that's why it's the recommended host for this server.
+services:
+  - type: web
+    name: lumi-server
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false   # set this in the Render dashboard — never commit it
+      - key: PYTHON_VERSION
+        value: 3.11.9
