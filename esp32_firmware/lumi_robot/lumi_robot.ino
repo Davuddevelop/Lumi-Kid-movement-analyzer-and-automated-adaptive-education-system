@@ -29,13 +29,25 @@
 using namespace websockets;
 
 // ── WiFi / Server config ───────────────────────────────────────
-// Change these to match your network and server
-const char* WIFI_SSID     = "LumiTable";        // your WiFi SSID
-const char* WIFI_PASSWORD = "lumikid2024";       // your WiFi password
-const char* SERVER_HOST   = "192.168.1.100";     // server IP on LAN
-const int   SERVER_PORT   = 8000;
+// Change these to match your network and server.
+//
+// LOCAL server (laptop on same WiFi):
+//   USE_TLS = false, SERVER_HOST = "192.168.1.xx", SERVER_PORT = 8000
+// CLOUD server (e.g. Render):
+//   USE_TLS = true,  SERVER_HOST = "lumi-server.onrender.com", SERVER_PORT = 443
+const char* WIFI_SSID     = "YOUR_WIFI_NAME";    // your WiFi SSID
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";// your WiFi password
+const bool  USE_TLS       = false;               // true for cloud (wss://)
+const char* SERVER_HOST   = "192.168.1.100";     // server IP or cloud hostname
+const int   SERVER_PORT   = 8000;                // 8000 local, 443 cloud
 const char* SERVER_PATH   = "/ws/robot";
 const char* ROBOT_ID      = "lumi-bot-1";        // unique per robot
+
+// TEST_MODE: set true to run WITHOUT motors/encoders assembled.
+// Movements become timed pauses + LED colors instead of waiting for encoder
+// ticks, so a bare ESP32 board can prove the full app↔robot pipeline.
+// Set to false once motors and encoders are wired up.
+const bool  TEST_MODE     = true;
 
 // ── Motor pins (L298N / TB6612) ────────────────────────────────
 #define MOTOR_L_PWM   25
@@ -183,6 +195,13 @@ float readBattery() {
 // ── Movement primitives ────────────────────────────────────────
 // Returns false if obstacle detected mid-move
 bool moveForward(int cells = 1) {
+    if (TEST_MODE) {
+        Serial.println("[TEST] forward");
+        setLEDs(CRGB::Blue);
+        delay(700);
+        setLEDs(CRGB::Black);
+        return true;
+    }
     long target = (long)cells * TICKS_PER_CELL;
     encL = encR = 0;
     setLEDs(CRGB::Blue);
@@ -213,6 +232,13 @@ bool moveForward(int cells = 1) {
 }
 
 void turnRight() {
+    if (TEST_MODE) {
+        Serial.println("[TEST] turn_right");
+        setLEDs(CRGB::Cyan);
+        delay(500);
+        setLEDs(CRGB::Black);
+        return;
+    }
     encL = encR = 0;
     setLEDs(CRGB::Cyan);
     motorLeft(TURN_SPEED);
@@ -223,6 +249,13 @@ void turnRight() {
 }
 
 void turnLeft() {
+    if (TEST_MODE) {
+        Serial.println("[TEST] turn_left");
+        setLEDs(CRGB::Yellow);
+        delay(500);
+        setLEDs(CRGB::Black);
+        return;
+    }
     encL = encR = 0;
     setLEDs(CRGB::Yellow);
     motorLeft(-TURN_SPEED);
@@ -384,7 +417,12 @@ void connectWebSocket() {
         }
     });
 
-    String url = String("ws://") + SERVER_HOST + ":" + SERVER_PORT + SERVER_PATH;
+    if (USE_TLS) {
+        // Cloud hosts use proper certs; skipping validation keeps setup simple
+        // and the channel is still encrypted.
+        ws.setInsecure();
+    }
+    String url = String(USE_TLS ? "wss://" : "ws://") + SERVER_HOST + ":" + SERVER_PORT + SERVER_PATH;
     Serial.printf("[WS] Connecting to %s\n", url.c_str());
     ws.connect(url);
 }

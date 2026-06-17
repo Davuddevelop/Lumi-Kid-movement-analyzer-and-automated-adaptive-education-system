@@ -2,13 +2,19 @@
 Lumi SQLite Persistence Layer
 Stores child progress, missions, interactions, badges, and XP.
 """
+import os
 import sqlite3
 import uuid
 import json
 from contextlib import contextmanager
 from datetime import datetime
 
-DB_PATH = "lumi.db"
+# Anchor to this file's directory so the DB doesn't depend on the launch cwd;
+# LUMI_DB_PATH overrides for hosts with a separate persistent disk.
+DB_PATH = os.environ.get(
+    "LUMI_DB_PATH",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "lumi.db"),
+)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS children (
