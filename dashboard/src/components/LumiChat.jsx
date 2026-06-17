@@ -181,7 +181,11 @@ export default function LumiChat({ gameState, open, onClose }) {
         stars:      gameState.stars_total,
       } : null;
 
-      const res = await fetch(`${API_URL()}/api/chat`, {
+      // On Vercel (non-localhost) use the co-deployed serverless function at /api/chat.
+      // On localhost use the Python FastAPI backend stored in localStorage.
+      const isLocal = /localhost|127\.0\.0\.1/.test(window.location.hostname);
+      const chatUrl = isLocal ? `${API_URL()}/api/chat` : '/api/chat';
+      const res = await fetch(chatUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: next, game_context: ctx }),
