@@ -3,5 +3,7 @@
   "outputDirectory": "dashboard/dist",
   "installCommand": "echo skip",
   "framework": null,
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }
