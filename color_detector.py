@@ -2,10 +2,17 @@ import cv2
 import numpy as np
 import requests
 import time
+import os
 
 from blocks import COLOR_TO_COMMAND
 
-SERVER_URL = "http://127.0.0.1:8000/api/update"
+# Where to send detected blocks.
+#   Local server:  http://127.0.0.1:8000      (default)
+#   Cloud (Render): https://lumi-server.onrender.com
+# Override with:  set LUMI_SERVER=https://lumi-server.onrender.com   (Windows)
+#                 export LUMI_SERVER=https://lumi-server.onrender.com (Mac/Linux)
+SERVER_BASE = os.environ.get("LUMI_SERVER", "http://127.0.0.1:8000").rstrip("/")
+SERVER_URL = f"{SERVER_BASE}/api/update"
 
 def send_to_server(commands):
     """Send detected commands to the server."""
