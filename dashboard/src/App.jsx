@@ -21,6 +21,11 @@ import LumiChat         from './components/LumiChat';
 // ─── API config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const WS_BASE  = API_BASE.replace(/^http/, 'ws');
+// Seed localStorage so child components (LumiChat, AIRobotPanel, RobotSetup)
+// all pick up the same server URL without the user having to open RobotSetup first.
+if (API_BASE !== 'http://localhost:8000' || !localStorage.getItem('lumi_api_url')) {
+  localStorage.setItem('lumi_api_url', API_BASE);
+}
 
 // ─── Command display map ───────────────────────────────────────────────────────
 const CMD_CONFIG = {
