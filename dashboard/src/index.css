@@ -565,6 +565,37 @@ body {
 .run-button:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 4px 0 #14532D, 0 6px 16px rgba(22, 163, 74, 0.28); }
 .run-button:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: 0 6px 0 rgba(0,0,0,0.12) !important; }
 
+/* ── AUTO-SOLVE BUTTON (Level 1 demo) ─────────────────────── */
+.auto-solve-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 68px;
+  padding: 0 18px;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 6px 0 #5b21b6, 0 8px 24px rgba(124, 58, 237, 0.38);
+  white-space: nowrap;
+}
+.auto-solve-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 0 #5b21b6, 0 12px 32px rgba(124, 58, 237, 0.48);
+}
+.auto-solve-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 #5b21b6, 0 4px 12px rgba(124, 58, 237, 0.28);
+}
+.auto-solve-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+.auto-solve-btn--solving { opacity: 0.85; }
+
 /* ============================================================
    ACHIEVEMENT OVERLAY
    ============================================================ */

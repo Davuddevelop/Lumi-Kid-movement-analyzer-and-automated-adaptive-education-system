@@ -123,8 +123,9 @@ function App() {
   const [showAIPanel, setShowAIPanel]       = useState(false);
   const [robotIP, setRobotIP] = useState(localStorage.getItem('lumi_robot_ip') || '');
   const [gameState, setGameState] = useState(INITIAL_STATE);
-  const [isListening, setIsListening] = useState(false);
-  const [isRunning, setIsRunning]     = useState(false);
+  const [isListening, setIsListening]   = useState(false);
+  const [isRunning, setIsRunning]       = useState(false);
+  const [isAutoSolving, setIsAutoSolving] = useState(false);
   const [showBubble, setShowBubble]   = useState(false);
   const bubbleTimerRef  = useRef(null);
   const prevFeedbackRef = useRef('');
@@ -228,6 +229,15 @@ function App() {
     setIsRunning(true);
     await apiPost('/api/execute');
     setTimeout(() => setIsRunning(false), 800);
+  };
+
+  const handleAutoSolve = async () => {
+    if (isAutoSolving || gameState.status === 'executing') return;
+    setIsAutoSolving(true);
+    // Ensure level 1 is loaded, then trigger BFS auto-solve + robot execution
+    await apiPost('/api/levels/load', { level_id: 1 });
+    await apiPost('/api/ai/auto-solve', { robot_id: 'lumi-bot-1' });
+    setTimeout(() => setIsAutoSolving(false), 1200);
   };
 
   const handleReset = () => apiPost('/api/reset');
@@ -620,6 +630,26 @@ function App() {
         >
           💡
         </button>
+
+        {/* Auto-solve — only shown on level 1 (first challenge) */}
+        {gameState.current_level_id === 1 && (
+          <button
+            className={`auto-solve-btn${isAutoSolving ? ' auto-solve-btn--solving' : ''}`}
+            onClick={handleAutoSolve}
+            disabled={isAutoSolving || gameState.status === 'executing'}
+            aria-label="Auto-solve level 1"
+            title="Solve it for me!"
+          >
+            {isAutoSolving ? (
+              <>
+                <RefreshCw className="animate-spin" size={20} />
+                Solving…
+              </>
+            ) : (
+              <>⚡ SOLVE IT!</>
+            )}
+          </button>
+        )}
 
         {/* Run */}
         <button
