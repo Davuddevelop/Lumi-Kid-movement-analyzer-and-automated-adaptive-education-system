@@ -42,3 +42,6 @@ logs/
 *.json.bak
 lumi_mission_logs.json
 lumi.db
+
+# Claude Code
+.claude/worktrees/
