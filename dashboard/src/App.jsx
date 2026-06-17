@@ -35,6 +35,34 @@ const CMD_CONFIG = {
   loop:       { emoji: '🔴', label: '↩' },
 };
 
+// ─── Client-side BFS (mirrors server lumi_ai.py) ─────────────────────────────
+const _DX = [0, 1, 0, -1];
+const _DY = [-1, 0, 1, 0];
+
+function clientBfsPlan(gs) {
+  const W = gs.grid_size.width, H = gs.grid_size.height;
+  const obs = new Set((gs.obstacles || []).map(o => `${o.x},${o.y}`));
+  const [gx, gy] = [gs.goal.x, gs.goal.y];
+  let x = gs.robot_pos.x, y = gs.robot_pos.y, d = gs.robot_direction ?? 1;
+  const queue = [[[x, y, d], []]];
+  const seen = new Set([`${x},${y},${d}`]);
+  while (queue.length) {
+    const [[cx, cy, cd], path] = queue.shift();
+    if (cx === gx && cy === gy) return path;
+    const moves = [
+      [cx, cy, ((cd - 1) + 4) % 4, 'turn_left'],
+      [cx, cy, (cd + 1) % 4,       'turn_right'],
+      [cx + _DX[cd], cy + _DY[cd], cd, 'forward'],
+    ];
+    for (const [nx, ny, nd, cmd] of moves) {
+      if (cmd === 'forward' && (nx < 0 || nx >= W || ny < 0 || ny >= H || obs.has(`${nx},${ny}`))) continue;
+      const k = `${nx},${ny},${nd}`;
+      if (!seen.has(k)) { seen.add(k); queue.push([[nx, ny, nd], [...path, cmd]]); }
+    }
+  }
+  return null;
+}
+
 // ─── Emotion map ───────────────────────────────────────────────────────────────
 function getLumiEmotion(status, sentiment, hasQuestion) {
   if (hasQuestion)                              return 'surprised';
@@ -223,21 +251,96 @@ function App() {
     }
   }, []);
 
+  // ── Client-side execution fallback (works without a server) ──────────────
+  const runClientExecution = useCallback(async (commands, snap) => {
+    let x = snap.start_pos.x, y = snap.start_pos.y, d = snap.robot_direction ?? 1;
+    const unrolled = [];
+    for (const cmd of commands) {
+      if (cmd === 'loop' && unrolled.length > 0) {
+        unrolled.push(unrolled[unrolled.length - 1], unrolled[unrolled.length - 1]);
+      } else {
+        unrolled.push(cmd);
+      }
+    }
+    setGameState(prev => ({
+      ...prev, status: 'executing', commands,
+      robot_pos: snap.start_pos, robot_direction: d,
+      path: [snap.start_pos], feedback: 'Robot starting…',
+    }));
+    for (const cmd of unrolled) {
+      await new Promise(r => setTimeout(r, 520));
+      if (cmd === 'turn_right') d = (d + 1) % 4;
+      else if (cmd === 'turn_left') d = ((d - 1) + 4) % 4;
+      else if (cmd === 'forward') { x += _DX[d]; y += _DY[d]; }
+      const pos = { x, y };
+      setGameState(prev => ({
+        ...prev, robot_pos: pos, robot_direction: d,
+        path: [...prev.path, pos], feedback: `Executing: ${cmd}`,
+      }));
+    }
+    const won = x === snap.goal.x && y === snap.goal.y;
+    setGameState(prev => ({
+      ...prev,
+      status: won ? 'success' : 'error',
+      feedback: won ? '🎉 Goal reached! Amazing!' : 'Not quite — try again!',
+    }));
+    setIsRunning(false);
+    setIsAutoSolving(false);
+  }, []);
+
   // ── Game actions ───────────────────────────────────────────────────────────
   const handleRun = async () => {
-    if (gameState.commands.length === 0 || gameState.status === 'executing' || isRunning) return;
+    if (gameState.status === 'executing' || isRunning) return;
     setIsRunning(true);
-    await apiPost('/api/execute');
-    setTimeout(() => setIsRunning(false), 800);
+    const snap = gameState;
+
+    // Try server first (1.5 s timeout); fall back to client-side BFS + animation.
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 1500);
+      const endpoint = snap.commands.length === 0
+        ? ['/api/ai/auto-solve', { robot_id: 'lumi-bot-1' }]
+        : ['/api/execute', null];
+      const [path, body] = endpoint;
+      const opts = { method: 'POST', signal: ctrl.signal };
+      if (body) { opts.headers = { 'Content-Type': 'application/json' }; opts.body = JSON.stringify(body); }
+      await fetch(`${API_BASE}${path}`, opts);
+      clearTimeout(tid);
+      setTimeout(() => setIsRunning(false), 800);
+    } catch {
+      // Server unreachable — solve and animate purely on the client
+      const cmds = snap.commands.length > 0 ? snap.commands : clientBfsPlan(snap);
+      if (cmds && cmds.length > 0) {
+        await runClientExecution(cmds, snap);
+      } else {
+        setIsRunning(false);
+      }
+    }
   };
 
   const handleAutoSolve = async () => {
     if (isAutoSolving || gameState.status === 'executing') return;
     setIsAutoSolving(true);
-    // Ensure level 1 is loaded, then trigger BFS auto-solve + robot execution
-    await apiPost('/api/levels/load', { level_id: 1 });
-    await apiPost('/api/ai/auto-solve', { robot_id: 'lumi-bot-1' });
-    setTimeout(() => setIsAutoSolving(false), 1200);
+    const snap = gameState;
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 1500);
+      await fetch(`${API_BASE}/api/levels/load`, { method: 'POST', signal: ctrl.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level_id: 1 }) });
+      clearTimeout(tid);
+      const ctrl2 = new AbortController();
+      const tid2 = setTimeout(() => ctrl2.abort(), 1500);
+      await fetch(`${API_BASE}/api/ai/auto-solve`, { method: 'POST', signal: ctrl2.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ robot_id: 'lumi-bot-1' }) });
+      clearTimeout(tid2);
+      setTimeout(() => setIsAutoSolving(false), 1200);
+    } catch {
+      // Server offline — solve client-side with BFS
+      const cmds = clientBfsPlan(snap);
+      if (cmds && cmds.length > 0) {
+        await runClientExecution(cmds, snap);
+      } else {
+        setIsAutoSolving(false);
+      }
+    }
   };
 
   const handleReset = () => apiPost('/api/reset');
@@ -655,7 +758,7 @@ function App() {
         <button
           className="run-button"
           onClick={handleRun}
-          disabled={gameState.commands.length === 0 || isExecutingOrRunning}
+          disabled={isExecutingOrRunning}
           aria-label="Run the program"
         >
           {isExecutingOrRunning ? (
