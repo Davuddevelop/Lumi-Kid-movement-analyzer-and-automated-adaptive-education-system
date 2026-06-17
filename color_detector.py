@@ -118,7 +118,66 @@ def open_camera():
     return None
 
 
+def annotate_frame(frame, blocks, commands):
+    """Draw bounding boxes + command labels onto the frame (in place)."""
+    bgr_colors = {
+        'green': (0, 255, 0),
+        'blue': (255, 0, 0),
+        'yellow': (0, 255, 255),
+        'red': (0, 0, 255),
+        'orange': (0, 165, 255),
+        'purple': (128, 0, 128)
+    }
+    for block in blocks:
+        x, y, w, h = block['bbox']
+        bgr_color = bgr_colors.get(block['color'], (255, 255, 255))
+        cv2.rectangle(frame, (x, y), (x + w, y + h), bgr_color, 3)
+        cmd_text = COLOR_TO_COMMAND[block['color']]
+        cv2.putText(frame, cmd_text, (x, max(15, y - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, bgr_color, 2)
+    sequence_text = f"Sequence: {commands}"
+    cv2.putText(frame, sequence_text, (20, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+
+def process_image(path):
+    """
+    DEMO MODE: run the REAL computer vision on a saved photo instead of a
+    live camera. Detects the colored blocks, sends the command sequence to
+    the server, and shows the annotated image. Perfect for presentations
+    where a live camera/WiFi is unreliable.
+
+    Enable with:  set LUMI_IMAGE=sample_blocks.png   (Windows)
+                  python color_detector.py
+    """
+    frame = cv2.imread(path)
+    if frame is None:
+        print(f"Error: could not read image '{path}'. Check the path.")
+        return
+
+    commands, blocks = detect_and_sort_blocks(frame, min_area=800)
+    print("--- Vision Command System (IMAGE DEMO) ---")
+    print(f"Image: {path}")
+    print(f"Detected {len(blocks)} blocks → sequence: {commands}")
+    send_to_server(commands)
+    print("Sent to server. The blocks now appear in the app.")
+    print("Press 'q' to close the preview window.")
+
+    annotate_frame(frame, blocks, commands)
+    while True:
+        cv2.imshow('Lumi Block Detector — IMAGE DEMO', frame)
+        if cv2.waitKey(100) & 0xFF == ord('q'):
+            break
+    cv2.destroyAllWindows()
+
+
 def main():
+    # DEMO MODE: process a still image if LUMI_IMAGE is set.
+    image_path = os.environ.get("LUMI_IMAGE", "").strip()
+    if image_path:
+        process_image(image_path)
+        return
+
     cap = open_camera()
     if cap is None:
         return
@@ -150,38 +209,9 @@ def main():
             last_send_time = current_time
 
         # Visualization
-        for block in blocks:
-            x, y, w, h = block['bbox']
-            
-            # Select display color (OpenCV uses BGR)
-            bgr_colors = {
-                'green': (0, 255, 0),
-                'blue': (255, 0, 0),
-                'yellow': (0, 255, 255),
-                'red': (0, 0, 255),
-                'orange': (0, 165, 255),
-                'purple': (128, 0, 128)
-            }
-            bgr_color = bgr_colors.get(block['color'], (255, 255, 255))
-
-            # Draw rectangle around block
-            cv2.rectangle(frame, (x, y), (x + w, y + h), bgr_color, 3)
-            
-            # Draw command text
-            cmd_text = COLOR_TO_COMMAND[block['color']]
-            cv2.putText(frame, cmd_text, (x, max(15, y - 10)), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, bgr_color, 2)
-
-        # Show the command sequence on screen
-        sequence_text = f"Sequence: {commands}"
-        cv2.putText(frame, sequence_text, (20, 40), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-        
+        annotate_frame(frame, blocks, commands)
         cv2.imshow('Top-Down Block Detector', frame)
-        
-        # Debounced command print out - just for console demonstration
-        # (In production, you'd only send commands when the user gives a "submit" signal)
-        
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
