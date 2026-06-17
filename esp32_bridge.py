@@ -58,7 +58,7 @@ class ESP32RobotBridge:
             await asyncio.sleep(len(commands) * 0.6)  # simulate timing
             return True
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         fut = loop.create_future()
         self._pending[robot_id] = fut
 

@@ -16,10 +16,16 @@ import HomeScreen       from './components/HomeScreen';
 import CameraView       from './components/CameraView';
 import RobotSetup       from './components/RobotSetup';
 import AIRobotPanel     from './components/AIRobotPanel';
+import LumiChat         from './components/LumiChat';
 
 // ─── API config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const WS_BASE  = API_BASE.replace(/^http/, 'ws');
+// Seed localStorage so child components (LumiChat, AIRobotPanel, RobotSetup)
+// all pick up the same server URL without the user having to open RobotSetup first.
+if (API_BASE !== 'http://localhost:8000' || !localStorage.getItem('lumi_api_url')) {
+  localStorage.setItem('lumi_api_url', API_BASE);
+}
 
 // ─── Command display map ───────────────────────────────────────────────────────
 const CMD_CONFIG = {
@@ -117,8 +123,9 @@ function App() {
   const [showAIPanel, setShowAIPanel]       = useState(false);
   const [robotIP, setRobotIP] = useState(localStorage.getItem('lumi_robot_ip') || '');
   const [gameState, setGameState] = useState(INITIAL_STATE);
-  const [isListening, setIsListening] = useState(false);
-  const [isRunning, setIsRunning]     = useState(false);
+  const [isListening, setIsListening]   = useState(false);
+  const [isRunning, setIsRunning]       = useState(false);
+  const [isAutoSolving, setIsAutoSolving] = useState(false);
   const [showBubble, setShowBubble]   = useState(false);
   const bubbleTimerRef  = useRef(null);
   const prevFeedbackRef = useRef('');
@@ -167,6 +174,7 @@ function App() {
 
   // ── Focus mode ─────────────────────────────────────────────────────────────
   const [showFocus, setShowFocus] = useState(false);
+  const [showLumiChat, setShowLumiChat] = useState(false);
 
   // ── TTS ────────────────────────────────────────────────────────────────────
   const speak = useCallback((text) => {
@@ -221,6 +229,15 @@ function App() {
     setIsRunning(true);
     await apiPost('/api/execute');
     setTimeout(() => setIsRunning(false), 800);
+  };
+
+  const handleAutoSolve = async () => {
+    if (isAutoSolving || gameState.status === 'executing') return;
+    setIsAutoSolving(true);
+    // Ensure level 1 is loaded, then trigger BFS auto-solve + robot execution
+    await apiPost('/api/levels/load', { level_id: 1 });
+    await apiPost('/api/ai/auto-solve', { robot_id: 'lumi-bot-1' });
+    setTimeout(() => setIsAutoSolving(false), 1200);
   };
 
   const handleReset = () => apiPost('/api/reset');
@@ -487,6 +504,16 @@ function App() {
           🧠
         </button>
 
+        {/* Lumi Chat button */}
+        <button
+          className={`cam-top-btn chat-top-btn${showLumiChat ? ' chat-top-btn--active' : ''}`}
+          onClick={() => setShowLumiChat(o => !o)}
+          aria-label={showLumiChat ? 'Close Lumi chat' : 'Chat with Lumi'}
+          title="Chat with Lumi"
+        >
+          💬
+        </button>
+
         {/* Focus button */}
         <button
           className="focus-btn"
@@ -604,6 +631,26 @@ function App() {
           💡
         </button>
 
+        {/* Auto-solve — only shown on level 1 (first challenge) */}
+        {gameState.current_level_id === 1 && (
+          <button
+            className={`auto-solve-btn${isAutoSolving ? ' auto-solve-btn--solving' : ''}`}
+            onClick={handleAutoSolve}
+            disabled={isAutoSolving || gameState.status === 'executing'}
+            aria-label="Auto-solve level 1"
+            title="Solve it for me!"
+          >
+            {isAutoSolving ? (
+              <>
+                <RefreshCw className="animate-spin" size={20} />
+                Solving…
+              </>
+            ) : (
+              <>⚡ SOLVE IT!</>
+            )}
+          </button>
+        )}
+
         {/* Run */}
         <button
           className="run-button"
@@ -657,6 +704,13 @@ function App() {
           lumiEmotion={lumiEmotion}
         />
       )}
+
+      {/* ── LUMI CHATBOT ───────────────────────────────────────────── */}
+      <LumiChat
+        open={showLumiChat}
+        onClose={() => setShowLumiChat(false)}
+        gameState={gameState}
+      />
     </div>
   );
 }

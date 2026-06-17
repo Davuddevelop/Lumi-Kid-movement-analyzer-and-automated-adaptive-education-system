@@ -2,10 +2,17 @@ import cv2
 import numpy as np
 import requests
 import time
+import os
 
 from blocks import COLOR_TO_COMMAND
 
-SERVER_URL = "http://127.0.0.1:8000/api/update"
+# Where to send detected blocks.
+#   Local server:  http://127.0.0.1:8000      (default)
+#   Cloud (Render): https://lumi-server.onrender.com
+# Override with:  set LUMI_SERVER=https://lumi-server.onrender.com   (Windows)
+#                 export LUMI_SERVER=https://lumi-server.onrender.com (Mac/Linux)
+SERVER_BASE = os.environ.get("LUMI_SERVER", "http://127.0.0.1:8000").rstrip("/")
+SERVER_URL = f"{SERVER_BASE}/api/update"
 
 def send_to_server(commands):
     """Send detected commands to the server."""
@@ -74,17 +81,105 @@ def detect_and_sort_blocks(frame, min_area=500):
     
     return commands, detected_blocks
 
-def main():
-    # Attempt to open standard webcam (index 0)
-    # Change to a specific IP or index if using an external USB / Top-Down camera
-    cap = cv2.VideoCapture(0)
-    
-    # For higher performance / visibility, optionally set camera resolution:
-    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+def open_camera():
+    """
+    Open either a USB webcam (numeric index) or a WiFi/IP camera (stream URL).
 
-    if not cap.isOpened():
-        print("Error: Cannot access the camera feed.")
+    Set the source with the LUMI_CAMERA env variable:
+      USB webcam:   LUMI_CAMERA=0      (or 1, 2)
+      WiFi camera:  LUMI_CAMERA=rtsp://user:pass@192.168.1.50:554/stream
+                    LUMI_CAMERA=http://192.168.1.50:8080/video
+    Default: try USB indices 0, 1, 2.
+    """
+    src = os.environ.get("LUMI_CAMERA", "").strip()
+
+    # WiFi / IP camera — a stream URL
+    if src.startswith(("rtsp://", "http://", "https://")):
+        print(f"[Camera] Opening network stream: {src}")
+        cap = cv2.VideoCapture(src)
+        if cap.isOpened():
+            return cap
+        cap.release()
+        print("Error: Could not open the WiFi camera stream.")
+        print("Check the RTSP/HTTP URL, IP address, username and password.")
+        return None
+
+    # USB webcam — numeric index. DirectShow is most reliable on Windows.
+    candidates = [int(src)] if src.isdigit() else [0, 1, 2]
+    for idx in candidates:
+        cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
+        if cap.isOpened():
+            print(f"[Camera] Opened USB camera index {idx}")
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+            return cap
+        cap.release()
+    print("Error: Cannot access any USB camera (tried indices 0,1,2).")
+    return None
+
+
+def annotate_frame(frame, blocks, commands):
+    """Draw bounding boxes + command labels onto the frame (in place)."""
+    bgr_colors = {
+        'green': (0, 255, 0),
+        'blue': (255, 0, 0),
+        'yellow': (0, 255, 255),
+        'red': (0, 0, 255),
+        'orange': (0, 165, 255),
+        'purple': (128, 0, 128)
+    }
+    for block in blocks:
+        x, y, w, h = block['bbox']
+        bgr_color = bgr_colors.get(block['color'], (255, 255, 255))
+        cv2.rectangle(frame, (x, y), (x + w, y + h), bgr_color, 3)
+        cmd_text = COLOR_TO_COMMAND[block['color']]
+        cv2.putText(frame, cmd_text, (x, max(15, y - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, bgr_color, 2)
+    sequence_text = f"Sequence: {commands}"
+    cv2.putText(frame, sequence_text, (20, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+
+def process_image(path):
+    """
+    DEMO MODE: run the REAL computer vision on a saved photo instead of a
+    live camera. Detects the colored blocks, sends the command sequence to
+    the server, and shows the annotated image. Perfect for presentations
+    where a live camera/WiFi is unreliable.
+
+    Enable with:  set LUMI_IMAGE=sample_blocks.png   (Windows)
+                  python color_detector.py
+    """
+    frame = cv2.imread(path)
+    if frame is None:
+        print(f"Error: could not read image '{path}'. Check the path.")
+        return
+
+    commands, blocks = detect_and_sort_blocks(frame, min_area=800)
+    print("--- Vision Command System (IMAGE DEMO) ---")
+    print(f"Image: {path}")
+    print(f"Detected {len(blocks)} blocks → sequence: {commands}")
+    send_to_server(commands)
+    print("Sent to server. The blocks now appear in the app.")
+    print("Press 'q' to close the preview window.")
+
+    annotate_frame(frame, blocks, commands)
+    while True:
+        cv2.imshow('Lumi Block Detector — IMAGE DEMO', frame)
+        if cv2.waitKey(100) & 0xFF == ord('q'):
+            break
+    cv2.destroyAllWindows()
+
+
+def main():
+    # DEMO MODE: process a still image if LUMI_IMAGE is set.
+    image_path = os.environ.get("LUMI_IMAGE", "").strip()
+    if image_path:
+        process_image(image_path)
+        return
+
+    cap = open_camera()
+    if cap is None:
         return
 
     print("--- Vision Command System Started ---")
@@ -114,38 +209,9 @@ def main():
             last_send_time = current_time
 
         # Visualization
-        for block in blocks:
-            x, y, w, h = block['bbox']
-            
-            # Select display color (OpenCV uses BGR)
-            bgr_colors = {
-                'green': (0, 255, 0),
-                'blue': (255, 0, 0),
-                'yellow': (0, 255, 255),
-                'red': (0, 0, 255),
-                'orange': (0, 165, 255),
-                'purple': (128, 0, 128)
-            }
-            bgr_color = bgr_colors.get(block['color'], (255, 255, 255))
-
-            # Draw rectangle around block
-            cv2.rectangle(frame, (x, y), (x + w, y + h), bgr_color, 3)
-            
-            # Draw command text
-            cmd_text = COLOR_TO_COMMAND[block['color']]
-            cv2.putText(frame, cmd_text, (x, max(15, y - 10)), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, bgr_color, 2)
-
-        # Show the command sequence on screen
-        sequence_text = f"Sequence: {commands}"
-        cv2.putText(frame, sequence_text, (20, 40), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-        
+        annotate_frame(frame, blocks, commands)
         cv2.imshow('Top-Down Block Detector', frame)
-        
-        # Debounced command print out - just for console demonstration
-        # (In production, you'd only send commands when the user gives a "submit" signal)
-        
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

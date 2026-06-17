@@ -141,6 +141,32 @@ async def broadcast_state():
         if d in clients:
             clients.remove(d)
 
+async def ai_refresh_feedback(trigger: str, has_question: bool = False):
+    """
+    Fire-and-forget: upgrade the instant rule-based feedback with a fresh
+    Claude-generated line once it arrives. When a guided question is active,
+    only the suggestion line is replaced so the question stays answerable.
+    """
+    status_at_call = state.status
+    try:
+        text = await lumi_ai.get_lumi_response(
+            trigger,
+            sentiment=state.sentiment,
+            status=state.status,
+            level_id=state.current_level_id,
+        )
+        # Skip if the game moved on while Claude was thinking
+        if not text or state.status != status_at_call:
+            return
+        if has_question:
+            state.suggestion = text
+        else:
+            state.feedback = text
+        await broadcast_state()
+    except Exception:
+        pass
+
+
 async def execute_commands():
     """Execute commands step by step."""
     global last_mistake_tag
@@ -191,6 +217,8 @@ async def execute_commands():
                 state.feedback = q.text if q else "Oops! You went off the edge!"
                 state.suggestion = q.hint if q else "Try turning before going forward."
                 await broadcast_state()
+                asyncio.create_task(ai_refresh_feedback(
+                    "Robot fell off the grid edge", has_question=q is not None))
                 return
 
             # Obstacle check
@@ -207,6 +235,8 @@ async def execute_commands():
                 state.feedback = q.text if q else "Crash! You hit a rock!"
                 state.suggestion = q.hint if q else "Try turning earlier to avoid obstacles."
                 await broadcast_state()
+                asyncio.create_task(ai_refresh_feedback(
+                    "Robot crashed into a rock obstacle", has_question=q is not None))
                 return
 
             x, y = nx, ny
@@ -262,6 +292,11 @@ async def execute_commands():
         if pending:
             state.achievement = pending
             state.suggestion = f"{pending['icon']} NEW BADGE: {pending['name']}!"
+        else:
+            # Personalized AI celebration (badge text must not be overwritten)
+            asyncio.create_task(ai_refresh_feedback(
+                f"Child solved level {state.current_level_id} and reached the star!",
+                has_question=q is not None))
 
         # Trigger robot celebration asynchronously (fire-and-forget)
         asyncio.create_task(robot_bridge.celebrate("lumi-bot-1"))
@@ -274,6 +309,9 @@ async def execute_commands():
         q = question_system.get_question_for_state("partial", "missed_goal")
         state.feedback = q.text if q else "You didn't crash, but missed the goal!"
         state.suggestion = q.hint if q else "Adjust your path to reach the flag."
+        asyncio.create_task(ai_refresh_feedback(
+            "Robot finished its moves safely but stopped short of the goal",
+            has_question=q is not None))
         try:
             save_mission_attempt(state.current_level_id, 'fail', state.commands, 0, 0, duration_sec)
         except Exception:
@@ -349,6 +387,32 @@ async def load_demo():
     await broadcast_state()
     return {"message": f"Loaded: {demo['name']}"}
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+    game_context: Optional[Dict] = None
+
+@app.post("/api/chat")
+async def chat(req: ChatRequest):
+    """Multi-turn Lumi chatbot endpoint for the child chat UI."""
+    messages = [{"role": m.role, "content": m.content} for m in req.messages]
+    ctx = dict(req.game_context) if req.game_context else {}
+    # Let Lumi know how the child has been doing lately
+    try:
+        pattern = memory_system.analyze_pattern()
+        ctx["history"] = (
+            f"Recent learning pattern: {pattern.get('pattern', 'new_user')}, "
+            f"trend: {pattern.get('trend', 'neutral')}."
+        )
+    except Exception:
+        pass
+    result = await lumi_ai.chat_with_lumi(messages, ctx or None)
+    return result
+
+
 class VoiceInput(BaseModel):
     text: str
 
@@ -423,9 +487,9 @@ async def voice_interact(voice: VoiceInput):
                 "explanation_details": result.get("explanation_details", {})
             }
 
-    # No active question - use free-form mind analyzer
+    # No active question — free-form chat. Mind analyzer supplies sentiment;
+    # Claude supplies the reply (rule-based response if AI is unavailable).
     analysis = analyzer.analyze(voice.text)
-    response = analyzer.get_lumi_response(analysis, state.to_dict())
 
     # Sync state with analysis
     state.sentiment = analysis.get("sentiment", "neutral")
@@ -437,6 +501,21 @@ async def voice_interact(voice: VoiceInput):
         state.vitals["focus"] = max(0, state.vitals["focus"] - 5)
     elif state.sentiment == "curiosity":
         state.vitals["focus"] = min(100, state.vitals["focus"] + 15)
+
+    if lumi_ai.AI_ENABLED:
+        chat_result = await lumi_ai.chat_with_lumi(
+            [{"role": "user", "content": voice.text}],
+            {
+                "level_id": state.current_level_id,
+                "level_name": getattr(state, "level_name", ""),
+                "status": state.status,
+                "sentiment": state.sentiment,
+                "stars": state.stars_total,
+            },
+        )
+        response = chat_result["reply"]
+    else:
+        response = analyzer.get_lumi_response(analysis, state.to_dict())
 
     logger.log_interaction(voice.text, analysis)
     state.feedback = response
@@ -552,28 +631,15 @@ async def answer_question_new(answer: QuestionAnswerInput):
 
 @app.post("/api/hint")
 async def offer_hint():
-    """Offer a hint based on current game state."""
-    # Determine context from last mistake
-    context = "default"
-    if last_mistake_tag == "crashed_into_obstacle":
-        context = "crash"
-    elif last_mistake_tag == "fell_off_edge":
-        context = "edge"
-    elif last_mistake_tag == "missed_goal":
-        context = "miss_goal"
-    elif state.status == "success":
-        context = "success"
-
-    question = question_system.offer_hint(context)
-    state.feedback = question.text
-    state.suggestion = question.hint
+    """Grid-aware AI hint: BFS finds the real shortest path from the robot's
+    current position, Claude phrases a nudge about only the first move."""
+    result = await lumi_ai.generate_smart_hint(state.to_dict(), last_mistake_tag)
+    state.feedback = result["hint"]
+    if result.get("moves_remaining"):
+        state.suggestion = f"⭐ The star is {result['moves_remaining']} moves away — you can do it!"
     await broadcast_state()
 
-    return {
-        "message": "Hint offered",
-        "question": question_system.get_current_question_data(),
-        "context": context
-    }
+    return {"message": "Hint offered", **result}
 
 class HintResponse(BaseModel):
     wants_hint: bool
