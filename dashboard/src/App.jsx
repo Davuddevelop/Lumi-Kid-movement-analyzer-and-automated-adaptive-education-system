@@ -225,9 +225,14 @@ function App() {
 
   // ── Game actions ───────────────────────────────────────────────────────────
   const handleRun = async () => {
-    if (gameState.commands.length === 0 || gameState.status === 'executing' || isRunning) return;
+    if (gameState.status === 'executing' || isRunning) return;
     setIsRunning(true);
-    await apiPost('/api/execute');
+    // No blocks scanned yet? Auto-solve so the robot still moves (great for demos).
+    if (gameState.commands.length === 0) {
+      await apiPost('/api/ai/auto-solve', { robot_id: 'lumi-bot-1' });
+    } else {
+      await apiPost('/api/execute');
+    }
     setTimeout(() => setIsRunning(false), 800);
   };
 
@@ -655,7 +660,7 @@ function App() {
         <button
           className="run-button"
           onClick={handleRun}
-          disabled={gameState.commands.length === 0 || isExecutingOrRunning}
+          disabled={isExecutingOrRunning}
           aria-label="Run the program"
         >
           {isExecutingOrRunning ? (
