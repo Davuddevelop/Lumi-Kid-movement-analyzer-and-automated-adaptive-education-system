@@ -43,6 +43,12 @@ const int   SERVER_PORT   = 8000;                // 8000 local, 443 cloud
 const char* SERVER_PATH   = "/ws/robot";
 const char* ROBOT_ID      = "lumi-bot-1";        // unique per robot
 
+// TEST_MODE: set true to run WITHOUT motors/encoders assembled.
+// Movements become timed pauses + LED colors instead of waiting for encoder
+// ticks, so a bare ESP32 board can prove the full app↔robot pipeline.
+// Set to false once motors and encoders are wired up.
+const bool  TEST_MODE     = true;
+
 // ── Motor pins (L298N / TB6612) ────────────────────────────────
 #define MOTOR_L_PWM   25
 #define MOTOR_L_IN1   26
@@ -189,6 +195,13 @@ float readBattery() {
 // ── Movement primitives ────────────────────────────────────────
 // Returns false if obstacle detected mid-move
 bool moveForward(int cells = 1) {
+    if (TEST_MODE) {
+        Serial.println("[TEST] forward");
+        setLEDs(CRGB::Blue);
+        delay(700);
+        setLEDs(CRGB::Black);
+        return true;
+    }
     long target = (long)cells * TICKS_PER_CELL;
     encL = encR = 0;
     setLEDs(CRGB::Blue);
@@ -219,6 +232,13 @@ bool moveForward(int cells = 1) {
 }
 
 void turnRight() {
+    if (TEST_MODE) {
+        Serial.println("[TEST] turn_right");
+        setLEDs(CRGB::Cyan);
+        delay(500);
+        setLEDs(CRGB::Black);
+        return;
+    }
     encL = encR = 0;
     setLEDs(CRGB::Cyan);
     motorLeft(TURN_SPEED);
@@ -229,6 +249,13 @@ void turnRight() {
 }
 
 void turnLeft() {
+    if (TEST_MODE) {
+        Serial.println("[TEST] turn_left");
+        setLEDs(CRGB::Yellow);
+        delay(500);
+        setLEDs(CRGB::Black);
+        return;
+    }
     encL = encR = 0;
     setLEDs(CRGB::Yellow);
     motorLeft(-TURN_SPEED);
