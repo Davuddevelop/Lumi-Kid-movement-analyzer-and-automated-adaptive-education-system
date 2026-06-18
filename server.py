@@ -108,10 +108,8 @@ class RobotState:
             "stars_total": self.stars_total,
             "achievement": self.achievement,
         }
-        # Add current question if any
-        q_data = question_system.get_current_question_data()
-        if q_data:
-            data["question"] = q_data
+        # Always include question key so frontend clears it when null
+        data["question"] = question_system.get_current_question_data()
         # Include live robot status so dashboard can show connection badge
         data["robot_status"] = {
             "connected": len(robot_bridge.list_robots()) > 0,
