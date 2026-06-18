@@ -97,6 +97,24 @@ body {
 }
 
 /* ============================================================
+   CONTENT AREA + SIDEBAR
+   ============================================================ */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* On mobile/tablet the sidebar is transparent — just stacks children */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* ============================================================
    TOP STRIP
    ============================================================ */
 .top-strip {
@@ -234,12 +252,13 @@ body {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Lumi Corner */
+/* Lumi Corner — pushed to far right of top strip */
 .lumi-corner {
   display: flex;
   align-items: center;
   gap: 10px;
   position: relative;
+  margin-left: auto;
 }
 
 /* ============================================================
@@ -896,15 +915,142 @@ body {
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 600px) {
-  .top-strip { padding: 8px 10px; gap: 6px; }
+
+/* ── Mobile (≤ 767px) ── */
+@media (max-width: 767px) {
+  .top-strip { padding: 6px 10px; gap: 6px; min-height: 56px; }
   .level-name-badge { display: none; }
   .xp-bar-wrapper { display: none; }
-  .lumi-logo { font-size: 1.2rem; }
-  .action-bar { padding: 8px 10px 10px; gap: 8px; }
-  .run-button { font-size: 1.3rem; min-height: 70px; }
-  .block-tile { width: 76px; height: 76px; font-size: 1.7rem; }
-  .answer-card { width: 90px; height: 90px; font-size: 2.5rem; }
+  .top-strip-level { font-size: 1rem; }
+  .top-strip-stars { padding: 4px 10px; font-size: 1.1rem; min-height: 44px; }
+  .lumi-logo { font-size: 1.25rem; }
+  .focus-btn, .parent-btn, .ai-panel-btn { display: none; }
+  .action-bar { padding: 7px 10px 10px; gap: 7px; }
+  .run-button { font-size: 1.35rem; min-height: 64px; }
+  .block-tile { width: 74px; height: 74px; font-size: 1.7rem; }
+  .block-strip { min-height: 88px; }
+  .answer-card { width: 88px; height: 88px; font-size: 2.4rem; }
+  .auto-solve-btn { font-size: 1.05rem; min-height: 58px; padding: 0 12px; }
+  .map-btn { padding: 0 10px; font-size: 0.85rem; }
+  .lumi-corner { margin-left: 0; }
+}
+
+/* ── Tablet Portrait (768px – 1023px) ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .top-strip { padding: 8px 16px; gap: 8px; min-height: 60px; }
+  .level-name-badge { display: none; }
+  .xp-bar-wrapper { max-width: 160px; }
+  .lumi-logo { font-size: 1.5rem; }
+  .top-strip-stars { font-size: 1.2rem; min-height: 48px; padding: 5px 12px; }
+  .ai-panel-btn { display: none; }
+  .parent-btn { display: none; }
+  .focus-btn { display: none; }
+  .grid-wrapper {
+    max-width: min(100%, calc(100vh - 258px));
+    max-height: min(100%, calc(100vh - 258px));
+  }
+  .block-tile { width: 80px; height: 80px; }
+  .block-strip { min-height: 94px; }
+  .run-button { font-size: 1.55rem; min-height: 72px; }
+  .action-bar { padding: 9px 14px 12px; gap: 9px; }
+  .auto-solve-btn { min-height: 64px; font-size: 1.1rem; }
+}
+
+/* ── Desktop: iPad Landscape + Laptop (1024px+) ── */
+@media (min-width: 1024px) {
+
+  /* Two-column layout: grid left, sidebar right */
+  .content-area { flex-direction: row; }
+
+  .game-area {
+    flex: 1;
+    padding: 14px 10px 14px 20px;
+  }
+
+  /* Grid fills the full height of the game column */
+  .grid-wrapper {
+    max-width: min(100%, calc(100vh - 90px));
+    max-height: min(100%, calc(100vh - 90px));
+  }
+
+  /* Sidebar: right panel — blocks scroll, action bar pins to bottom */
+  .sidebar {
+    width: 340px;
+    border-left: 3px solid #C8B8FF;
+    overflow: hidden;
+  }
+
+  .block-strip-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 14px 8px;
+    background: linear-gradient(180deg, #F0EEFF 0%, #EAE0FF 100%);
+    border-top: none;
+  }
+
+  .block-strip {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    min-height: unset;
+    gap: 10px;
+    padding-bottom: 4px;
+    align-content: flex-start;
+  }
+
+  .block-tile { width: 84px; height: 84px; }
+
+  .action-bar {
+    padding: 12px 14px 16px;
+    border-left: none;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F4F0FF 100%);
+    border-top: 3px solid #D4C8FF;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .run-button { font-size: 1.6rem; min-height: 68px; max-height: 80px; }
+  .auto-solve-btn { min-height: 60px; font-size: 1.1rem; padding: 0 14px; }
+  .hint-btn, .reset-btn, .mic-btn { min-height: 60px; }
+
+  /* Top strip: roomier on desktop */
+  .top-strip { padding: 10px 24px; min-height: 66px; gap: 12px; }
+  .lumi-logo { font-size: 1.75rem; }
+  .level-name-badge { display: inline; }
+  .xp-bar-wrapper { display: flex; max-width: 240px; }
+  .ai-panel-btn { display: flex; }
+  .parent-btn { display: flex; }
+  .focus-btn { display: flex; }
+  .top-strip-stars { min-height: 50px; }
+}
+
+/* ── Large Desktop (1280px+) ── */
+@media (min-width: 1280px) {
+  .sidebar { width: 380px; }
+  .block-tile { width: 92px; height: 92px; }
+  .block-strip { gap: 12px; }
+  .run-button { font-size: 1.75rem; min-height: 74px; }
+  .auto-solve-btn { min-height: 66px; font-size: 1.2rem; }
+  .lumi-logo { font-size: 1.9rem; }
+  .top-strip { padding: 10px 32px; }
+  .xp-bar-wrapper { max-width: 280px; }
+  .grid-wrapper {
+    max-width: min(100%, calc(100vh - 86px));
+    max-height: min(100%, calc(100vh - 86px));
+  }
+}
+
+/* ── Extra Large Desktop (1600px+) ── */
+@media (min-width: 1600px) {
+  .sidebar { width: 420px; }
+  .block-tile { width: 100px; height: 100px; font-size: 2.3rem; }
+  .block-strip { gap: 14px; }
+  .run-button { font-size: 1.9rem; min-height: 80px; }
+  .xp-bar-wrapper { max-width: 320px; }
+  .grid-wrapper {
+    max-width: min(100%, calc(100vh - 82px));
+    max-height: min(100%, calc(100vh - 82px));
+  }
 }
 
 /* ============================================================
