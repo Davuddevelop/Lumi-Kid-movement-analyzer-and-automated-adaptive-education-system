@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumi AI — Layihə Təqdimatı</title>
+<style>
+  :root {
+    --indigo:  #5B4FE8;
+    --purple:  #A855F7;
+    --yellow:  #FFD43B;
+    --green:   #00C853;
+    --coral:   #FF5252;
+    --cyan:    #00BCD4;
+    --orange:  #FF9F43;
+    --ink:     #1E1B4B;
+    --muted:   #6B7BAE;
+    --card:    #ffffff;
+    --line:    #E5EAFF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', 'Nunito', sans-serif; }
+
+  /* ── SLIDE ENGINE ── */
+  .deck { width: 100%; height: 100%; position: relative; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease;
+    overflow: auto;
+  }
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 14px; z-index: 100;
+    background: rgba(30,27,75,0.82); backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255,255,255,0.15); border-radius: 60px;
+    padding: 10px 22px; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+  }
+  .nav button {
+    background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25);
+    color: white; border-radius: 50%; width: 36px; height: 36px;
+    font-size: 1.1rem; cursor: pointer; transition: background 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+  .nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .nav .counter { color: rgba(255,255,255,0.85); font-weight: 800; font-size: 0.9rem; min-width: 54px; text-align: center; }
+  .dots { display: flex; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.2s; }
+  .dot.on { background: var(--yellow); }
+
+  /* ── HELPERS ── */
+  .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.38); border-radius: 50px; padding: 5px 14px; font-weight: 800; font-size: 0.82rem; color: white; }
+  .tag { background: rgba(91,79,232,0.12); border: 1.5px solid rgba(91,79,232,0.25); border-radius: 50px; padding: 4px 14px; font-size: 0.82rem; font-weight: 800; color: var(--indigo); }
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 22px; padding: 22px; box-shadow: 0 6px 24px rgba(91,79,232,0.1); }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; }
+  h2 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 900; }
+  p, li { font-size: clamp(0.9rem, 1.8vw, 1.1rem); line-height: 1.65; }
+
+  /* ══════════════════════════════════════
+     SLIDE 1 — TİTLE
+  ══════════════════════════════════════ */
+  .s1 {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #A855F7 100%);
+    justify-content: center; align-items: center; text-align: center;
+    color: white; gap: 16px; padding: 40px 30px;
+  }
+  .s1 .logo { font-size: clamp(3rem, 8vw, 5.5rem); font-weight: 900; letter-spacing: 2px; }
+  .s1 .logo span { color: var(--yellow); }
+  .s1 .tagline { max-width: 640px; font-size: clamp(1rem, 2.2vw, 1.3rem); font-weight: 700; opacity: 0.95; line-height: 1.5; }
+  .s1 .pills { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 8px; }
+  .s1 .author { margin-top: 20px; opacity: 0.75; font-size: 0.9rem; }
+
+  /* ══════════════════════════════════════
+     SLIDE 2 — PROBLEM
+  ══════════════════════════════════════ */
+  .s2 {
+    background: linear-gradient(160deg, #EEF2FF 0%, #F5EEFF 100%);
+    padding: 40px 44px; gap: 20px;
+  }
+  .s2 .header { display: flex; align-items: center; gap: 14px; }
+  .s2 .header .num { width: 52px; height: 52px; background: var(--coral); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 900; color: white; flex-shrink: 0; }
+  .s2 .header h2 { color: var(--ink); }
+  .s2 .problems { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; flex: 1; }
+  .prob { border-radius: 20px; padding: 20px; border: 2px solid transparent; }
+  .prob .icon { font-size: 2rem; }
+  .prob h3 { font-size: 1.05rem; font-weight: 900; margin: 8px 0 5px; }
+  .prob p { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+  .prob-a { background: #FFF0F0; border-color: #FFCDD2; }
+  .prob-b { background: #FFF8E1; border-color: #FFE082; }
+  .prob-c { background: #E8F5E9; border-color: #A5D6A7; }
+  .prob-d { background: #EDE7F6; border-color: #CE93D8; }
+  .stat-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 130px; background: var(--ink); border-radius: 18px; padding: 16px 18px; color: white; }
+  .stat .num2 { font-size: 2rem; font-weight: 900; color: var(--yellow); }
+  .stat .lbl { font-size: 0.8rem; font-weight: 700; opacity: 0.8; margin-top: 2px; }
+
+  /* ══════════════════════════════════════
+     SLIDE 3 — HƏLL YOLU
+  ══════════════════════════════════════ */
+  .s3 {
+    background: linear-gradient(160deg, #E8F5E9 0%, #E3F2FD 100%);
+    padding: 40px 44px; gap: 20px;
+  }
+  .s3 .header .num { background: var(--green); }
+  .s3 .header h2 { color: var(--ink); }
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 0; background: white; border: 2px solid var(--line); border-radius: 24px; padding: 22px; box-shadow: 0 6px 24px rgba(0,200,83,0.1); }
+  .fstep { flex: 1; min-width: 110px; text-align: center; padding: 8px; }
+  .fstep .fe { font-size: 2.2rem; }
+  .fstep .fn { font-weight: 900; font-size: 0.95rem; color: var(--ink); margin-top: 6px; }
+  .fstep .fs { font-size: 0.78rem; color: var(--muted); font-weight: 700; }
+  .farrow { font-size: 1.6rem; color: var(--green); font-weight: 900; padding: 0 4px; }
+  .blocks-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .blk { display: flex; align-items: center; gap: 10px; background: white; border: 2px solid var(--line); border-radius: 16px; padding: 10px 14px; }
+  .swatch { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
+  .blk .cmd { font-weight: 900; font-size: 0.88rem; color: var(--ink); }
+  .blk .act { font-size: 0.75rem; color: var(--muted); font-weight: 700; }
+
+  /* ══════════════════════════════════════
+     SLIDE 4 — HƏDƏF AUDİTORİYA
+  ══════════════════════════════════════ */
+  .s4 {
+    background: linear-gradient(160deg, #FFF8E1 0%, #FFF0E0 100%);
+    padding: 40px 44px; gap: 20px;
+  }
+  .s4 .header .num { background: var(--orange); }
+  .audiences { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .aud { border-radius: 22px; padding: 22px; text-align: center; }
+  .aud .avatar { font-size: 3rem; }
+  .aud h3 { font-size: 1.05rem; font-weight: 900; margin: 10px 0 5px; color: var(--ink); }
+  .aud p { font-size: 0.87rem; color: var(--muted); font-weight: 600; }
+  .aud-a { background: #FFF3E0; border: 2px solid #FFCC02; }
+  .aud-b { background: #E3F2FD; border: 2px solid #90CAF9; }
+  .aud-c { background: #F3E5F5; border: 2px solid #CE93D8; }
+  .aud-d { background: #E8F5E9; border: 2px solid #A5D6A7; }
+  .market { display: flex; gap: 12px; flex-wrap: wrap; }
+  .mstat { flex: 1; min-width: 140px; background: var(--ink); border-radius: 18px; padding: 16px 18px; color: white; }
+  .mstat .mv { font-size: 1.7rem; font-weight: 900; color: var(--yellow); }
+  .mstat .ml { font-size: 0.8rem; font-weight: 700; opacity: 0.8; margin-top: 3px; }
+
+  /* ══════════════════════════════════════
+     SLIDE 5 — İCRA PLANI
+  ══════════════════════════════════════ */
+  .s5 {
+    background: linear-gradient(160deg, #E8EAF6 0%, #EDE7F6 100%);
+    padding: 40px 44px; gap: 20px;
+  }
+  .s5 .header .num { background: var(--indigo); }
+  .roadmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+  .phase { border-radius: 22px; padding: 20px; position: relative; overflow: hidden; }
+  .phase::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; border-radius: 22px 22px 0 0; }
+  .ph1 { background: #EEF2FF; border: 2px solid #C5CAE9; } .ph1::before { background: var(--indigo); }
+  .ph2 { background: #E8F5E9; border: 2px solid #A5D6A7; } .ph2::before { background: var(--green); }
+  .ph3 { background: #FFF3E0; border: 2px solid #FFCC02; } .ph3::before { background: var(--orange); }
+  .ph4 { background: #FCE4EC; border: 2px solid #F48FB1; } .ph4::before { background: var(--coral); }
+  .phase .pn { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
+  .phase h3 { font-size: 1rem; font-weight: 900; color: var(--ink); margin-bottom: 8px; }
+  .phase ul { list-style: none; }
+  .phase li { font-size: 0.85rem; color: var(--ink); font-weight: 600; padding: 3px 0 3px 18px; position: relative; }
+  .phase li::before { content: '→'; position: absolute; left: 0; color: var(--muted); }
+  .tech-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tech { background: var(--ink); color: white; border-radius: 12px; padding: 6px 14px; font-size: 0.83rem; font-weight: 800; }
+
+  /* ══════════════════════════════════════
+     SLIDE 6 — HARDWARE
+  ══════════════════════════════════════ */
+  .s6 {
+    background: linear-gradient(160deg, #E0F7FA 0%, #E8EAF6 100%);
+    padding: 40px 44px; gap: 20px;
+  }
+  .s6 .header .num { background: var(--cyan); color: var(--ink); }
+  .hw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .hw-card { background: white; border: 2px solid var(--line); border-radius: 20px; padding: 18px; }
+  .hw-card h3 { font-size: 0.95rem; font-weight: 900; color: var(--indigo); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .hw-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+  .hw-item:first-child { border-top: none; padding-top: 0; }
+  .hw-item .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--indigo); margin-top: 6px; flex-shrink: 0; }
+  .hw-item .part { font-weight: 900; font-size: 0.88rem; color: var(--ink); }
+  .hw-item .role { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+  .leds-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+  .led-chip { display: flex; align-items: center; gap: 7px; background: white; border: 1.5px solid var(--line); border-radius: 12px; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; }
+  .lb { width: 13px; height: 13px; border-radius: 50%; }
+
+  /* ══════════════════════════════════════
+     SLIDE 7 — POTENSİAL TƏSİR
+  ══════════════════════════════════════ */
+  .s7 {
+    background: linear-gradient(160deg, #E8F5E9 0%, #E0F2F1 100%);
+    padding: 40px 44px; gap: 20px;
+  }
+  .s7 .header .num { background: var(--green); }
+  .impacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .imp { border-radius: 22px; padding: 20px; }
+  .imp .ico { font-size: 2.2rem; }
+  .imp h3 { font-weight: 900; font-size: 1rem; color: var(--ink); margin: 8px 0 5px; }
+  .imp p { font-size: 0.88rem; color: var(--muted); font-weight: 600; }
+  .imp-a { background: #E8F5E9; border: 2px solid #A5D6A7; }
+  .imp-b { background: #E3F2FD; border: 2px solid #90CAF9; }
+  .imp-c { background: #FFF8E1; border: 2px solid #FFE082; }
+  .imp-d { background: #FCE4EC; border: 2px solid #F48FB1; }
+  .imp-e { background: #EDE7F6; border: 2px solid #CE93D8; }
+  .imp-f { background: #E0F7FA; border: 2px solid #80DEEA; }
+  .quote {
+    background: var(--ink); border-radius: 22px; padding: 22px 28px; color: white;
+    display: flex; align-items: flex-start; gap: 16px;
+  }
+  .quote .qm { font-size: 3.5rem; color: var(--yellow); line-height: 0.8; flex-shrink: 0; margin-top: 6px; }
+  .quote p { font-size: 1.02rem; font-weight: 700; line-height: 1.55; }
+  .quote .src { font-size: 0.82rem; opacity: 0.65; margin-top: 6px; font-weight: 700; }
+
+  /* ══════════════════════════════════════
+     SLIDE 8 — PROTOTIP / DEMO
+  ══════════════════════════════════════ */
+  .s8 {
+    background: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4C1D95 100%);
+    padding: 40px 44px; gap: 24px; color: white;
+  }
+  .s8 .header .num { background: var(--yellow); color: var(--ink); }
+  .s8 .header h2 { color: white; }
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
+  .demo-card { background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 22px; padding: 22px; }
+  .demo-card h3 { font-size: 1rem; font-weight: 900; color: var(--yellow); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .demo-card p, .demo-card li { color: rgba(255,255,255,0.85); font-size: 0.9rem; font-weight: 600; }
+  .demo-card ul { list-style: none; }
+  .demo-card li { padding: 4px 0 4px 20px; position: relative; }
+  .demo-card li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 900; }
+  .qr-mock { width: 100%; aspect-ratio: 1; background: rgba(255,255,255,0.05); border: 2px dashed rgba(255,255,255,0.2); border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+  .qr-mock .ico { font-size: 3rem; }
+  .qr-mock p { font-size: 0.85rem; color: rgba(255,255,255,0.6); font-weight: 700; text-align: center; }
+  .url-box { background: rgba(255,212,59,0.15); border: 2px solid rgba(255,212,59,0.5); border-radius: 14px; padding: 10px 16px; font-family: monospace; font-size: 0.88rem; color: var(--yellow); font-weight: 700; text-align: center; }
+
+  /* ══════════════════════════════════════
+     SLIDE 9 — SON (CLOSING)
+  ══════════════════════════════════════ */
+  .s9 {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #A855F7 100%);
+    justify-content: center; align-items: center; text-align: center;
+    color: white; gap: 20px; padding: 40px 30px;
+  }
+  .s9 .big { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; }
+  .s9 .big span { color: var(--yellow); }
+  .s9 .sub { font-size: clamp(1rem, 2.2vw, 1.35rem); font-weight: 700; opacity: 0.9; max-width: 580px; }
+  .s9 .cards-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .mini-card { background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 18px; padding: 14px 20px; text-align: center; min-width: 130px; }
+  .mini-card .v { font-size: 1.8rem; font-weight: 900; color: var(--yellow); }
+  .mini-card .l { font-size: 0.8rem; font-weight: 800; opacity: 0.8; margin-top: 2px; }
+  .team { font-size: 0.9rem; opacity: 0.65; font-weight: 700; margin-top: 10px; }
+
+  @media (max-width: 640px) {
+    .s2,.s3,.s4,.s5,.s6,.s7,.s8 { padding: 28px 18px; }
+    .hw-grid, .demo-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- ══ SLIDE 1 — TİTLE ══ -->
+  <div class="slide s1 active" data-idx="0">
+    <div class="logo">LUMI<span>AI</span></div>
+    <div class="tagline">Uşaqlar üçün Hərəkət Analizi əsaslı<br>Avtomatik Adaptiv Təhsil Sistemi</div>
+    <div class="pills">
+      <span class="badge">🤖 Fiziki Robot</span>
+      <span class="badge">📷 Kompüter Görməsi</span>
+      <span class="badge">🧠 Adaptiv AI</span>
+      <span class="badge">👶 5–8 yaş</span>
+    </div>
+    <div class="author">Davud Əli — 2026</div>
+  </div>
+
+  <!-- ══ SLIDE 2 — PROBLEMİN TƏSVİRİ ══ -->
+  <div class="slide s2" data-idx="1">
+    <div class="header">
+      <div class="num">1</div>
+      <h2>Problemin Təsviri</h2>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="num2">%72</div><div class="lbl">uşaq proqramlaşdırmanı "çox mücərrəd" tapır</div></div>
+      <div class="stat"><div class="num2">5–8</div><div class="lbl">yaş — alqoritmik düşüncə üçün ən kritik dövr</div></div>
+      <div class="stat"><div class="num2">%90</div><div class="lbl">ibtidai məktəblərdə kodlama dərsi yoxdur</div></div>
+      <div class="stat"><div class="num2">2×</div><div class="lbl">fiziki öyrənmə rəqəmsal öyrənmədən effektiv</div></div>
+    </div>
+    <div class="problems">
+      <div class="prob prob-a">
+        <div class="icon">😵</div>
+        <h3>Mücərrədlik</h3>
+        <p>Uşaqlar kodun nə etdiyini görmür — nəticə ekranda qalır, əl ilə toxunmur.</p>
+      </div>
+      <div class="prob prob-b">
+        <div class="icon">⌨️</div>
+        <h3>Erkən Maneə</h3>
+        <p>Sintaksis xətaları, klaviatura, mouse — 5 yaşlı üçün giriş maneəsi çox böyükdür.</p>
+      </div>
+      <div class="prob prob-c">
+        <div class="icon">🎮</div>
+        <h3>Passiv Öyrənmə</h3>
+        <p>Mövcud proqramlar uşağı ekrana baxmağa məhkum edir; əl-ayaq iştirak etmir.</p>
+      </div>
+      <div class="prob prob-d">
+        <div class="icon">🧑‍🏫</div>
+        <h3>Müəllim Yükü</h3>
+        <p>Müəllim hər uşağa fərdi diqqət verə bilmir; uyğunlaşma avtomatlaşdırılmayıb.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 3 — HƏLL YOLU ══ -->
+  <div class="slide s3" data-idx="2">
+    <div class="header">
+      <div class="num">2</div>
+      <h2>Təklif Edilən Həll Yolu</h2>
+    </div>
+    <div class="flow">
+      <div class="fstep"><div class="fe">🟢🔵🟡</div><div class="fn">Blokları Düz</div><div class="fs">Sol → Sağ</div></div>
+      <div class="farrow">→</div>
+      <div class="fstep"><div class="fe">📷</div><div class="fn">Kamera Oxuyur</div><div class="fs">OpenCV / HSV</div></div>
+      <div class="farrow">→</div>
+      <div class="fstep"><div class="fe">🧠</div><div class="fn">Server + AI</div><div class="fs">FastAPI + Claude</div></div>
+      <div class="farrow">→</div>
+      <div class="fstep"><div class="fe">📡</div><div class="fn">WebSocket</div><div class="fs">Real-vaxt</div></div>
+      <div class="farrow">→</div>
+      <div class="fstep"><div class="fe">🤖</div><div class="fn">Robot Gedir</div><div class="fs">ESP32 + encoder</div></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+      <p style="font-weight:700;color:var(--ink)"><strong>Rəngli fiziki bloklar</strong> = proqramlaşdırma dili. Uşaq klaviatura basmadan öz proqramını "əllə yazır".</p>
+      <div class="blocks-row">
+        <div class="blk"><div class="swatch" style="background:#00C853"></div><div><div class="cmd">İrəli</div><div class="act">Yaşıl blok</div></div></div>
+        <div class="blk"><div class="swatch" style="background:#2979FF"></div><div><div class="cmd">Sağa dön</div><div class="act">Mavi blok</div></div></div>
+        <div class="blk"><div class="swatch" style="background:#FFD43B"></div><div><div class="cmd">Sola dön</div><div class="act">Sarı blok</div></div></div>
+        <div class="blk"><div class="swatch" style="background:#FF5252"></div><div><div class="cmd">Dövrə (2×)</div><div class="act">Qırmızı blok</div></div></div>
+        <div class="blk"><div class="swatch" style="background:#FF9F43"></div><div><div class="cmd">Dövrə başla</div><div class="act">Narıncı blok</div></div></div>
+        <div class="blk"><div class="swatch" style="background:#A855F7"></div><div><div class="cmd">Dövrə bitir</div><div class="act">Bənövşəyi blok</div></div></div>
+      </div>
+      <div class="card" style="background:#F0FFF4;border-color:#A5D6A7">
+        <strong style="color:var(--ink)">🤖 AI Tutor — Lumi</strong><br>
+        <span style="color:var(--muted);font-size:0.9rem;font-weight:600">Claude ilə işləyən uşaq dostu robot köməkçi — cavabı vermir, ipucu verir. Uşağın əhvalına və irəliləyişinə görə tonu dəyişdirir.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 4 — HƏDƏF AUDİTORİYA ══ -->
+  <div class="slide s4" data-idx="3">
+    <div class="header">
+      <div class="num">3</div>
+      <h2>Hədəf Auditoriya</h2>
+    </div>
+    <div class="audiences">
+      <div class="aud aud-a">
+        <div class="avatar">🧒</div>
+        <h3>5–8 yaşlı uşaqlar</h3>
+        <p>Proqramlaşdırmanı oyun kimi öyrənmək istəyən, klaviaturaya ehtiyac duymayan uşaqlar.</p>
+      </div>
+      <div class="aud aud-b">
+        <div class="avatar">🧑‍🏫</div>
+        <h3>İbtidai Sinif Müəllimləri</h3>
+        <p>STEM dərslərini maraqlı etmək istəyən, analitika ilə tərəqqini izləyən pedaqoqlar.</p>
+      </div>
+      <div class="aud aud-c">
+        <div class="avatar">👨‍👩‍👧</div>
+        <h3>Valideynlər</h3>
+        <p>Uşaqlarına texnoloji təhsil vermək istəyən, amma ekran vaxtını azaltmaq istəyən ailələr.</p>
+      </div>
+      <div class="aud aud-d">
+        <div class="avatar">🏫</div>
+        <h3>Məktəb &amp; STEM Mərkəzləri</h3>
+        <p>Robotik kursları üçün hazır, sürətlə qurula bilən, miqyaslana bilən platforma axtaranlar.</p>
+      </div>
+    </div>
+    <div class="market">
+      <div class="mstat"><div class="mv">$3.9B</div><div class="ml">2027-ci ilə qədər qlobal EdTech uşaq bazarı</div></div>
+      <div class="mstat"><div class="mv">120M+</div><div class="ml">5–8 yaşlı uşaq — Azərbaycan + ətraf ölkələr</div></div>
+      <div class="mstat"><div class="mv">%68</div><div class="ml">valideynlər erkən kodlama təhsilinə hazırdır</div></div>
+      <div class="mstat"><div class="mv">42 ölkə</div><div class="ml">robotik əsaslı STEM tədrisini milli kurikuluma daxil edib</div></div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 5 — İCRA PLANI ══ -->
+  <div class="slide s5" data-idx="4">
+    <div class="header">
+      <div class="num">4</div>
+      <h2>İcra Planı</h2>
+    </div>
+    <div class="roadmap">
+      <div class="phase ph1">
+        <div class="pn">Mərhələ 1 · 1–2 ay</div>
+        <h3>🔬 MVP Prototip</h3>
+        <ul>
+          <li>ESP32 robot yığımı</li>
+          <li>Rəng deteksiya kalibrasyonu</li>
+          <li>5 əsas missiya yaradılması</li>
+          <li>React dashboard tamamlanması</li>
+        </ul>
+      </div>
+      <div class="phase ph2">
+        <div class="pn">Mərhələ 2 · 3–4 ay</div>
+        <h3>🧪 Pilot Test</h3>
+        <ul>
+          <li>2–3 məktəbdə pilot</li>
+          <li>50+ uşaqla test sessiyaları</li>
+          <li>Müəllim geri bildirimi</li>
+          <li>AI tutor incələnməsi</li>
+        </ul>
+      </div>
+      <div class="phase ph3">
+        <div class="pn">Mərhələ 3 · 5–7 ay</div>
+        <h3>📈 Ölçəklənmə</h3>
+        <ul>
+          <li>Çox dilli dəstək (AZ/EN/RU)</li>
+          <li>Müəllim analitika paneli</li>
+          <li>Bulud sinxronizasiyası</li>
+          <li>10 məktəbə genişlənmə</li>
+        </ul>
+      </div>
+      <div class="phase ph4">
+        <div class="pn">Mərhələ 4 · 8–12 ay</div>
+        <h3>🚀 Kommersiya</h3>
+        <ul>
+          <li>Məktəb lisenziya modeli</li>
+          <li>Hardware kit satışı</li>
+          <li>Vercel + Render produksiya</li>
+          <li>Beynəlxalq bazarlara çıxış</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="font-weight:800;color:var(--ink);font-size:0.9rem">⚙️ İSTİFADƏ EDİLƏN TEXNOLOGİYALAR</div>
+      <div class="tech-row">
+        <span class="tech">Python FastAPI</span>
+        <span class="tech">React + Vite</span>
+        <span class="tech">OpenCV</span>
+        <span class="tech">ESP32 Firmware</span>
+        <span class="tech">Claude AI</span>
+        <span class="tech">WebSocket</span>
+        <span class="tech">Vercel</span>
+        <span class="tech">Render</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 6 — HARDWARE ══ -->
+  <div class="slide s6" data-idx="5">
+    <div class="header">
+      <div class="num">HW</div>
+      <h2>Hardware — Lumi-Bot</h2>
+    </div>
+    <div class="hw-grid">
+      <div class="hw-card">
+        <h3>📦 Komponentlər</h3>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">ESP32-WROOM-32</div><div class="role">Beyin — WiFi mikrokontroller</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">L298N motor sürücüsü</div><div class="role">Motorlara gücü idarə edir</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">2× DC motor (encoderli)</div><div class="role">Təkərlər + məsafə geri bildirimi</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">HC-SR04 ultrasəs sensoru</div><div class="role">Maneə aşkarlanması</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">WS2812B NeoPixel (12 LED)</div><div class="role">Robot emosiyası / statusu</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">7.4V LiPo (2S) batareya</div><div class="role">Əsas güc mənbəyi</div></div></div>
+      </div>
+      <div class="hw-card">
+        <h3>🔌 Əsas Bağlantılar</h3>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">GPIO 25 / 14 (PWM)</div><div class="role">Sol/Sağ motor sürəti</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">GPIO 26,27 / 12,13</div><div class="role">Motor istiqamət siqnalları</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">GPIO 34 / 35</div><div class="role">Sol/Sağ encoder siqnalları</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">GPIO 5 / 18</div><div class="role">HC-SR04 TRIG / ECHO</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">GPIO 4</div><div class="role">NeoPixel DATA</div></div></div>
+        <div class="hw-item"><div class="dot"></div><div><div class="part">GPIO 36</div><div class="role">Batareya gərginliyi ölçümü</div></div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="font-weight:800;color:var(--ink);font-size:0.9rem">💡 LED STATUS DİLİ</div>
+      <div class="leds-wrap">
+        <span class="led-chip"><span class="lb" style="background:#A855F7;box-shadow:0 0 6px #A855F7"></span>Açılış</span>
+        <span class="led-chip"><span class="lb" style="background:#2979FF;box-shadow:0 0 6px #2979FF"></span>İrəli gedir</span>
+        <span class="led-chip"><span class="lb" style="background:#00BCD4;box-shadow:0 0 6px #00BCD4"></span>Sağa dönür</span>
+        <span class="led-chip"><span class="lb" style="background:#FFD43B;box-shadow:0 0 6px #FFD43B"></span>Sola dönür</span>
+        <span class="led-chip"><span class="lb" style="background:#00C853;box-shadow:0 0 6px #00C853"></span>Qoşuldu / Uğur</span>
+        <span class="led-chip"><span class="lb" style="background:#FF5252;box-shadow:0 0 6px #FF5252"></span>Xəta / Maneə</span>
+        <span class="led-chip"><span class="lb" style="background:conic-gradient(red,orange,yellow,green,blue,violet,red);box-shadow:none"></span>Qələbə! 🎉</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 7 — POTENSİAL TƏSİR ══ -->
+  <div class="slide s7" data-idx="6">
+    <div class="header">
+      <div class="num">5</div>
+      <h2>Potensial Təsir</h2>
+    </div>
+    <div class="impacts">
+      <div class="imp imp-a"><div class="ico">🧠</div><h3>Alqoritmik Düşüncə</h3><p>Uşaqlar ardıcıllıq, dövrə və sazlama anlayışlarını oyun vasitəsilə mənimsəyir.</p></div>
+      <div class="imp imp-b"><div class="ico">✋</div><h3>Fiziki Öyrənmə</h3><p>Blokları əllə düzmək — hərəkət, toxunuş və görmə birləşdirir; hafizəni gücləndirir.</p></div>
+      <div class="imp imp-c"><div class="ico">📊</div><h3>Müəllim Analitikası</h3><p>Hər uşağın tipik səhvləri avtomatik qeydə alınır; müəllimə hədəfli hesabat gedir.</p></div>
+      <div class="imp imp-d"><div class="ico">💬</div><h3>Dil Inkişafı</h3><p>AI tutor uşaqla söhbət edir, suallar verir — izah etmək bacarığını artırır.</p></div>
+      <div class="imp imp-e"><div class="ico">🌍</div><h3>Əlçatanlıq</h3><p>Bulud demo — hardware olmadan da işləyir; internet olan hər yerdən öyrənmə mümkündür.</p></div>
+      <div class="imp imp-f"><div class="ico">⚖️</div><h3>Bərabər İmkan</h3><p>Bahalı proqramlaşdırma kurslarına alternativ — açıq lisenziya, aşağı hardware xərci.</p></div>
+    </div>
+    <div class="quote">
+      <div class="qm">"</div>
+      <div>
+        <p>Uşaqlar proqramlaşdırmanı öyrənmir — onlar problemi həll etməyi öyrənirlər. Lumi sadəcə bu prosesi görünən edir.</p>
+        <div class="src">— Lumi AI, Layihə Vizyonu</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 8 — PROTOTIP / DEMO ══ -->
+  <div class="slide s8" data-idx="7">
+    <div class="header">
+      <div class="num" style="background:var(--yellow);color:var(--ink)">🎬</div>
+      <h2>Prototip &amp; Canlı Demo</h2>
+    </div>
+    <div class="demo-grid">
+      <div class="demo-card">
+        <h3>🖥️ Web Demo (Vercel)</h3>
+        <ul>
+          <li>Hardware olmadan işləyir</li>
+          <li>Brauzerdə robot animasiyası</li>
+          <li>AI tutor (Claude Haiku)</li>
+          <li>"LET'S GO!" → BFS həll yolu</li>
+          <li>Uğurda konfetti + XP sistemi</li>
+        </ul>
+        <br>
+        <div class="url-box">lumi-kid-movement-analyzer-and-auto.vercel.app</div>
+      </div>
+      <div class="demo-card">
+        <h3>🤖 Fiziki Robot Demo</h3>
+        <ul>
+          <li>ESP32 WiFi üzərindən qoşulur</li>
+          <li>Bloklar kamerada aşkarlanır</li>
+          <li>Robot encoder ilə dəqiq hərəkət edir</li>
+          <li>NeoPixel-lər statusu göstərir</li>
+          <li>Maneə aşkarlanırsa dayanır</li>
+        </ul>
+        <br>
+        <p style="font-size:0.82rem;opacity:0.6">📹 Prototip videosu ayrıca əlavə olunur</p>
+      </div>
+      <div class="demo-card">
+        <h3>📱 Dashboard Xüsusiyyətləri</h3>
+        <ul>
+          <li>Real-vaxt WebSocket grid</li>
+          <li>Komanda blok zolağı</li>
+          <li>Səviyyə sistemi (5×5 → 8×8)</li>
+          <li>Nailiyyət nişanları (15 badge)</li>
+          <li>Müəllim analitika paneli</li>
+        </ul>
+      </div>
+      <div class="demo-card">
+        <h3>🧩 Adaptiv Xüsusiyyətlər</h3>
+        <ul>
+          <li>Uşağın üslubuna uyğun ton</li>
+          <li>3 şəxsiyyət rejimi</li>
+          <li>Səhv şablonlarını yadda saxlayır</li>
+          <li>Cavab vaxtı analizi</li>
+          <li>İpucu sistemi (cavab yox)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 9 — SON ══ -->
+  <div class="slide s9" data-idx="8">
+    <div class="big">Uşaqların <span>Gələcəyi</span><br>Blok-blok Qurulur</div>
+    <div class="sub">Lumi — fiziki oyunu proqramlaşdırma bacarığına çevirən adaptiv AI platforması</div>
+    <div class="cards-row">
+      <div class="mini-card"><div class="v">6+</div><div class="l">rəngli blok əmri</div></div>
+      <div class="mini-card"><div class="v">15</div><div class="l">nailiyyət nişanı</div></div>
+      <div class="mini-card"><div class="v">∞</div><div class="l">missiya yaradıcısı</div></div>
+      <div class="mini-card"><div class="v">3</div><div class="l">dil dəstəyi</div></div>
+      <div class="mini-card"><div class="v">0$</div><div class="l">açıq lisenziya</div></div>
+    </div>
+    <div class="pills">
+      <span class="badge">🎓 MIT Lisenziyası</span>
+      <span class="badge">☁️ Vercel + Render</span>
+      <span class="badge">🤖 Claude AI ilə gücləndirilmişdir</span>
+    </div>
+    <div class="team">Davud Əli · davudali2022@gmail.com · 2026</div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- ── NAVİQASİYA ── -->
+<div class="nav">
+  <button id="prev" onclick="go(-1)">←</button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="counter"></span>
+  <button id="next" onclick="go(1)">→</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+  const titles = [
+    'Başlıq','1 · Problem','2 · Həll','3 · Auditoriya',
+    '4 · Plan','HW · Robot','5 · Təsir','Demo','Son'
+  ];
+
+  const dotsEl   = document.getElementById('dots');
+  const counter  = document.getElementById('counter');
+  const prevBtn  = document.getElementById('prev');
+  const nextBtn  = document.getElementById('next');
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' on':'');
+    d.onclick = () => show(i);
+    dotsEl.appendChild(d);
+  });
+
+  function show(n) {
+    slides[cur].classList.remove('active');
+    dotsEl.children[cur].classList.remove('on');
+    cur = Math.max(0, Math.min(n, slides.length-1));
+    slides[cur].classList.add('active');
+    dotsEl.children[cur].classList.add('on');
+    counter.textContent = `${cur+1} / ${slides.length}`;
+    prevBtn.disabled = cur === 0;
+    nextBtn.disabled = cur === slides.length-1;
+  }
+
+  function go(d) { show(cur+d); }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+  });
+
+  // Touch swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => tx = e.touches[0].clientX);
+  document.addEventListener('touchend',   e => {
+    const dx = tx - e.changedTouches[0].clientX;
+    if (Math.abs(dx) > 50) go(dx > 0 ? 1 : -1);
+  });
+
+  show(0);
+</script>
+</body>
+</html>
