@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumi — Project Overview</title>
+<style>
+  :root {
+    --indigo:   #5B4FE8;
+    --indigo-d: #4338CA;
+    --purple:   #A855F7;
+    --yellow:   #FFD43B;
+    --green:    #00C853;
+    --coral:    #FF5252;
+    --cyan:     #00BCD4;
+    --ink:      #1E1B4B;
+    --muted:    #6B7BAE;
+    --card:     #ffffff;
+    --line:     #E5EAFF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(160deg, #EEF2FF 0%, #F5EEFF 45%, #FFF0F5 100%);
+    color: var(--ink);
+    line-height: 1.6;
+    padding: 0 0 80px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 22px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 60%, #A855F7 100%);
+    color: #fff;
+    text-align: center;
+    padding: 64px 22px 72px;
+    box-shadow: 0 8px 40px rgba(79,70,229,0.35);
+    border-radius: 0 0 40px 40px;
+  }
+  .hero .logo {
+    font-size: 3.4rem; font-weight: 900; letter-spacing: 1px;
+    display: inline-flex; gap: 2px;
+  }
+  .hero .logo .ai { color: var(--yellow); margin-left: 10px; }
+  .hero .tag {
+    font-size: 1.25rem; font-weight: 700; opacity: 0.95;
+    margin-top: 12px; max-width: 620px; margin-inline: auto;
+  }
+  .hero .pills { margin-top: 24px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .pill {
+    background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.4);
+    border-radius: 50px; padding: 6px 16px; font-weight: 800; font-size: 0.9rem;
+  }
+
+  /* Section */
+  section { margin-top: 48px; }
+  h2 {
+    font-size: 1.7rem; font-weight: 900; color: var(--indigo-d);
+    display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
+  }
+  h2 .dot { width: 12px; height: 28px; border-radius: 6px; background: var(--purple); }
+  p.lead { font-size: 1.12rem; color: var(--ink); }
+
+  /* Flow diagram */
+  .flow {
+    display: flex; align-items: stretch; gap: 0; flex-wrap: wrap;
+    background: var(--card); border: 2px solid var(--line); border-radius: 24px;
+    padding: 26px 20px; box-shadow: 0 6px 24px rgba(91,79,232,0.10);
+  }
+  .flow .step { flex: 1; min-width: 130px; text-align: center; padding: 8px; }
+  .flow .step .emoji { font-size: 2.6rem; }
+  .flow .step .name { font-weight: 900; margin-top: 6px; }
+  .flow .step .sub { font-size: 0.82rem; color: var(--muted); font-weight: 700; }
+  .flow .arrow { display: flex; align-items: center; font-size: 1.8rem; color: var(--purple); font-weight: 900; }
+
+  /* Blocks table */
+  .blocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .block {
+    background: var(--card); border-radius: 18px; padding: 16px;
+    border: 2px solid var(--line); box-shadow: 0 4px 16px rgba(91,79,232,0.08);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .block .swatch { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
+  .block .cmd { font-weight: 900; font-size: 0.98rem; }
+  .block .act { font-size: 0.8rem; color: var(--muted); font-weight: 700; }
+  .sw-green  { background: #00C853; } .sw-blue { background: #2979FF; }
+  .sw-yellow { background: #FFD43B; } .sw-red  { background: #FF5252; }
+  .sw-orange { background: #FF9F43; } .sw-purple { background: #A855F7; }
+
+  /* Feature cards */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card); border-radius: 22px; padding: 22px;
+    border: 2px solid var(--line); box-shadow: 0 6px 22px rgba(91,79,232,0.09);
+    transition: transform 0.2s;
+  }
+  .card:hover { transform: translateY(-4px); }
+  .card .ico { font-size: 2rem; }
+  .card h3 { font-size: 1.12rem; margin: 8px 0 6px; color: var(--indigo-d); }
+  .card p { font-size: 0.95rem; color: var(--muted); font-weight: 600; }
+
+  /* Stack */
+  .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .layer {
+    background: var(--card); border-radius: 18px; padding: 18px;
+    border-left: 6px solid var(--indigo); box-shadow: 0 4px 16px rgba(91,79,232,0.08);
+  }
+  .layer h4 { font-size: 1.05rem; color: var(--indigo-d); margin-bottom: 4px; }
+  .layer code { background: #EEF2FF; padding: 1px 7px; border-radius: 6px; font-size: 0.82rem; color: var(--indigo-d); font-weight: 700; }
+  .layer p { font-size: 0.9rem; color: var(--muted); font-weight: 600; margin-top: 6px; }
+
+  /* Deploy */
+  .deploy { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .deploy .box { background: var(--card); border: 2px solid var(--line); border-radius: 20px; padding: 22px; }
+  .deploy .box.local  { border-top: 6px solid var(--green); }
+  .deploy .box.cloud  { border-top: 6px solid var(--cyan); }
+  .deploy .box h3 { color: var(--indigo-d); font-size: 1.15rem; margin-bottom: 8px; }
+  .deploy .box ul { list-style: none; }
+  .deploy .box li { padding: 4px 0 4px 24px; position: relative; font-weight: 600; color: var(--ink); font-size: 0.95rem; }
+  .deploy .box li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 900; }
+
+  footer { text-align: center; margin-top: 56px; color: var(--muted); font-weight: 700; font-size: 0.9rem; }
+  @media (max-width: 640px) {
+    .deploy { grid-template-columns: 1fr; }
+    .hero .logo { font-size: 2.6rem; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="logo">LUMI<span class="ai">AI</span></div>
+    <div class="tag">A screen-free coding playground where kids program a real robot with physical colored blocks 🤖</div>
+    <div class="pills">
+      <span class="pill">Ages 5–8</span>
+      <span class="pill">Computer Vision</span>
+      <span class="pill">Adaptive Learning</span>
+      <span class="pill">Physical Robot</span>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <section>
+      <h2><span class="dot"></span>The Big Idea</h2>
+      <p class="lead">
+        Lumi teaches <strong>algorithmic thinking through physical play</strong> instead of a keyboard.
+        Children arrange colored blocks on a mat, a camera reads them, and a robot car drives the exact
+        path they "programmed" — making abstract concepts like <em>sequencing</em>, <em>loops</em>, and
+        <em>debugging</em> tangible and fun.
+      </p>
+    </section>
+
+    <section>
+      <h2><span class="dot"></span>How It Works</h2>
+      <div class="flow">
+        <div class="step"><div class="emoji">🟢🔵🟡</div><div class="name">Place Blocks</div><div class="sub">Kids arrange L→R</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="emoji">📷</div><div class="name">Camera Scans</div><div class="sub">OpenCV / HSV</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="emoji">🖥️</div><div class="name">Dashboard</div><div class="sub">FastAPI + React</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="emoji">🤖</div><div class="name">Robot Drives</div><div class="sub">ESP32 / Arduino</div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="dot"></span>The Block Language</h2>
+      <div class="blocks">
+        <div class="block"><div class="swatch sw-green"></div><div><div class="cmd">forward</div><div class="act">Move one step</div></div></div>
+        <div class="block"><div class="swatch sw-blue"></div><div><div class="cmd">turn_right</div><div class="act">Rotate 90° CW</div></div></div>
+        <div class="block"><div class="swatch sw-yellow"></div><div><div class="cmd">turn_left</div><div class="act">Rotate 90° CCW</div></div></div>
+        <div class="block"><div class="swatch sw-red"></div><div><div class="cmd">loop</div><div class="act">Repeat last 2×</div></div></div>
+        <div class="block"><div class="swatch sw-orange"></div><div><div class="cmd">loop_start</div><div class="act">Begin loop</div></div></div>
+        <div class="block"><div class="swatch sw-purple"></div><div><div class="cmd">loop_end</div><div class="act">Repeat contents</div></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="dot"></span>Adaptive Learning Engine</h2>
+      <div class="cards">
+        <div class="card"><div class="ico">❓</div><h3>Guided Questions</h3><p>Context-aware prompts after a crash or win, with voice + button answers and response-time analysis.</p></div>
+        <div class="card"><div class="ico">🏅</div><h3>Achievements</h3><p>15 badges for accuracy, speed, efficiency & milestones to keep kids motivated.</p></div>
+        <div class="card"><div class="ico">🎭</div><h3>Personality Modes</h3><p>Lumi switches between Coach, Challenger & Friendly tones to suit the child.</p></div>
+        <div class="card"><div class="ico">🧠</div><h3>Interaction Memory</h3><p>Detects improving, struggling or mastering — and adapts feedback automatically.</p></div>
+        <div class="card"><div class="ico">💬</div><h3>AI Chat Buddy</h3><p>A friendly Claude-powered tutor that gives hints, not answers, in kid-simple words.</p></div>
+        <div class="card"><div class="ico">📊</div><h3>Teacher Analytics</h3><p>Logs every attempt and surfaces common mistake patterns for educators.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="dot"></span>Technical Stack</h2>
+      <div class="stack">
+        <div class="layer"><h4>Backend Hub</h4><code>server.py</code><p>FastAPI + WebSocket — broadcasts live game state to every client.</p></div>
+        <div class="layer"><h4>Vision</h4><code>color_detector.py</code><p>OpenCV HSV detection, sorts blocks left-to-right into commands.</p></div>
+        <div class="layer"><h4>Robot</h4><code>robot_controller.py</code><p>Serial F/L/R commands to ESP32/Arduino, with a software simulator fallback.</p></div>
+        <div class="layer"><h4>AI Brain</h4><code>lumi_ai.py</code><p>BFS path-planning + Claude chatbot for tutoring and auto-solve.</p></div>
+        <div class="layer"><h4>Frontend</h4><code>dashboard/ (React + Vite)</code><p>Kid-facing UI: animated grid, robot, blocks & the LET'S GO! button.</p></div>
+        <div class="layer"><h4>Levels</h4><code>level_system.py</code><p>Progressively harder missions with obstacles and goals.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="dot"></span>Two Ways to Run</h2>
+      <div class="deploy">
+        <div class="box local">
+          <h3>🏠 Full Local System</h3>
+          <ul>
+            <li>Real USB camera detection</li>
+            <li>Physical robot car drives the path</li>
+            <li>Python backend + voice interaction</li>
+            <li>Complete teacher analytics</li>
+          </ul>
+        </div>
+        <div class="box cloud">
+          <h3>☁️ Vercel Web Demo</h3>
+          <ul>
+            <li>Software-only, no hardware needed</li>
+            <li>Client-side BFS animates the robot</li>
+            <li>Serverless AI chat (/api/chat)</li>
+            <li>Runs entirely in the browser</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Lumi — Kid Movement Analyzer &amp; Automated Adaptive Education System · MIT License © 2026 Davud Ali
+    </footer>
+
+  </div>
+</body>
+</html>
