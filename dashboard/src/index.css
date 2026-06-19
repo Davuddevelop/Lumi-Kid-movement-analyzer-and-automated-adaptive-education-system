@@ -1810,6 +1810,14 @@ body {
 }
 .cam-video-wrapper { position: relative; background: #000; }
 .cam-video { width: 100%; height: 260px; object-fit: cover; display: block; }
+.cam-video-loading {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  color: #fff; font-size: 1rem;
+  font-family: 'Fredoka One', cursive;
+  pointer-events: none;
+}
 
 /* Scanning corners */
 .cam-corner {

@@ -13,6 +13,7 @@ export default function CameraView({ onClose, apiBase = 'http://localhost:8000' 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [status, setStatus] = useState('requesting');
+  const [videoReady, setVideoReady] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [detected, setDetected] = useState(null);
   const [applying, setApplying] = useState(false);
@@ -20,27 +21,46 @@ export default function CameraView({ onClose, apiBase = 'http://localhost:8000' 
 
   useEffect(() => {
     let stream = null;
+    // Simple constraints — iOS rejects overly strict ones
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+      .getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
       .then((s) => {
         stream = s;
+        const video = videoRef.current;
+        if (video) {
+          video.srcObject = s;
+          // iOS requires explicit .play() after srcObject assignment
+          video.play().catch(() => {});
+        }
         setStatus('granted');
-        if (videoRef.current) videoRef.current.srcObject = s;
       })
       .catch(() => setStatus('denied'));
     return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
   }, []);
 
+  const handleLoadedMetadata = useCallback(() => {
+    const video = videoRef.current;
+    if (video && video.videoWidth > 0) {
+      // iOS: dimensions now available, ensure playback started
+      video.play().catch(() => {});
+      setVideoReady(true);
+    }
+  }, []);
+
   const scan = useCallback(async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    // Guard: don't capture if video hasn't loaded dimensions yet (black frame on iOS)
+    if (!video || !canvas || video.videoWidth === 0) {
+      setDetected({ commands: [], blocks: [], error: 'Camera not ready — wait a moment and try again' });
+      return;
+    }
     setScanning(true);
     setApplied(false);
     setDetected(null);
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
     const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
@@ -70,7 +90,7 @@ export default function CameraView({ onClose, apiBase = 'http://localhost:8000' 
       });
       setApplied(true);
     } catch {
-      // ignore — server unreachable
+      // ignore
     } finally {
       setApplying(false);
     }
@@ -112,13 +132,23 @@ export default function CameraView({ onClose, apiBase = 'http://localhost:8000' 
             </div>
 
             <div className="cam-video-wrapper">
-              <video ref={videoRef} autoPlay playsInline muted className="cam-video" />
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="cam-video"
+                onLoadedMetadata={handleLoadedMetadata}
+              />
               <canvas ref={canvasRef} style={{ display: 'none' }} />
               <div className="cam-corner cam-corner-tl" />
               <div className="cam-corner cam-corner-tr" />
               <div className="cam-corner cam-corner-bl" />
               <div className="cam-corner cam-corner-br" />
               {scanning && <div className="cam-scan-line" />}
+              {!videoReady && (
+                <div className="cam-video-loading">⏳ Starting camera…</div>
+              )}
             </div>
 
             <p className="cam-hint">
@@ -126,8 +156,8 @@ export default function CameraView({ onClose, apiBase = 'http://localhost:8000' 
             </p>
 
             <div className="cam-actions">
-              <button className="cam-btn-scan" onClick={scan} disabled={scanning}>
-                {scanning ? '⏳ Scanning…' : '🔍 Scan Blocks'}
+              <button className="cam-btn-scan" onClick={scan} disabled={scanning || !videoReady}>
+                {scanning ? '⏳ Scanning…' : !videoReady ? '⏳ Camera loading…' : '🔍 Scan Blocks'}
               </button>
             </div>
 
