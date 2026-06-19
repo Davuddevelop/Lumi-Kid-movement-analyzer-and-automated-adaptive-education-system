@@ -502,13 +502,34 @@ body {
    ============================================================ */
 .action-bar {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px 14px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 14px;
   background: linear-gradient(180deg, #FFFFFF 0%, #F4F0FF 100%);
   border-top: 3px solid #D4C8FF;
   flex-shrink: 0;
   box-shadow: 0 -4px 20px rgba(91, 79, 232, 0.1);
+}
+/* Top row: secondary buttons (hint, solve, mic, reset) */
+.action-secondary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.action-secondary-row .hint-btn,
+.action-secondary-row .mic-btn,
+.action-secondary-row .reset-btn {
+  min-height: 44px;
+  height: 44px;
+  width: 44px;
+  font-size: 1.4rem;
+}
+.action-secondary-row .auto-solve-btn {
+  flex: 1;
+  min-height: 44px;
+  font-size: 1rem;
+  padding: 0 10px;
+  box-shadow: 0 4px 0 #5b21b6;
 }
 
 .hint-btn {
@@ -556,27 +577,26 @@ body {
 .mic-btn:hover, .mic-btn:active { transform: scale(1.08); }
 
 .run-button {
-  flex: 1;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  height: 100%;
-  min-height: 80px;
-  max-height: 100px;
-  padding: 0 20px;
+  gap: 10px;
+  min-height: 64px;
+  padding: 0 16px;
   background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%);
   border: none;
-  border-radius: 24px;
+  border-radius: 20px;
   color: white;
   font-family: 'Fredoka One', cursive;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   letter-spacing: 1px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 8px 0 #14532D, 0 10px 30px rgba(22, 163, 74, 0.38);
+  box-shadow: 0 6px 0 #14532D, 0 8px 24px rgba(22, 163, 74, 0.35);
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
 }
 .run-button::before {
   content: '';
@@ -933,8 +953,8 @@ body {
   .lumi-logo { font-size: 1.25rem; }
   .focus-btn, .parent-btn, .ai-panel-btn { display: none; }
   .action-bar { padding: 7px 10px 10px; gap: 7px; }
-  .run-button { font-size: 1.35rem; min-height: 64px; }
-  .block-tile { width: 74px; height: 74px; font-size: 1.7rem; }
+  .run-button { font-size: 1.25rem; min-height: 56px; }
+  .block-tile { width: 74px; height: 74px; }
   .block-strip { min-height: 88px; }
   .answer-card { width: 88px; height: 88px; font-size: 2.4rem; }
   .auto-solve-btn { font-size: 1.05rem; min-height: 58px; padding: 0 12px; }
@@ -958,8 +978,8 @@ body {
   }
   .block-tile { width: 80px; height: 80px; }
   .block-strip { min-height: 94px; }
-  .run-button { font-size: 1.55rem; min-height: 72px; }
-  .action-bar { padding: 9px 14px 12px; gap: 9px; }
+  .run-button { font-size: 1.4rem; min-height: 60px; }
+  .action-bar { padding: 9px 14px 12px; gap: 8px; }
   .auto-solve-btn { min-height: 64px; font-size: 1.1rem; }
 }
 
@@ -1348,6 +1368,26 @@ body {
 /* ============================================================
    DAILY CHALLENGE
    ============================================================ */
+.dc-wrapper {
+  position: relative;
+  padding: 10px 12px 4px;
+}
+.dc-dismiss {
+  position: absolute;
+  top: 14px; right: 16px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2;
+  line-height: 1;
+}
+.dc-dismiss:hover { background: rgba(255,255,255,0.3); color: #fff; }
+
 .daily-challenge-card {
   margin: 0 12px 8px;
   background: rgba(255, 209, 102, 0.10);

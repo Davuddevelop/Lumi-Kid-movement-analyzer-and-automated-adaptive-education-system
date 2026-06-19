@@ -203,6 +203,7 @@ function App() {
   // ── Focus mode ─────────────────────────────────────────────────────────────
   const [showFocus, setShowFocus] = useState(false);
   const [showLumiChat, setShowLumiChat] = useState(false);
+  const [showDailyChallenge, setShowDailyChallenge] = useState(true);
 
   // ── TTS ────────────────────────────────────────────────────────────────────
   const speak = useCallback((text) => {
@@ -700,9 +701,12 @@ function App() {
         {/* ── SIDEBAR (blocks + actions) ─────────────────────────────────── */}
         <div className="sidebar">
 
-          {/* Daily challenge banner at top of sidebar */}
-          {dailyChallenge && (
-            <DailyChallenge onPlay={handleDailyPlay} />
+          {/* Daily challenge banner — dismissible */}
+          {dailyChallenge && showDailyChallenge && (
+            <div className="dc-wrapper">
+              <button className="dc-dismiss" onClick={() => setShowDailyChallenge(false)} aria-label="Dismiss">✕</button>
+              <DailyChallenge onPlay={handleDailyPlay} />
+            </div>
           )}
 
           {/* ── BLOCK STRIP ──────────────────────────────────────────────── */}
@@ -737,60 +741,33 @@ function App() {
 
           {/* ── ACTION BAR ───────────────────────────────────────────────── */}
           <div className="action-bar">
-            <button
-              className="hint-btn"
-              onClick={handleHint}
-              aria-label="Get a hint"
-              title="Hint"
-            >
-              💡
-            </button>
-
-            {gameState.current_level_id === 1 && (
-              <button
-                className={`auto-solve-btn${isAutoSolving ? ' auto-solve-btn--solving' : ''}`}
-                onClick={handleAutoSolve}
-                disabled={isAutoSolving || gameState.status === 'executing'}
-                aria-label="Auto-solve level 1"
-                title="Solve it for me!"
-              >
-                {isAutoSolving ? (
-                  <><RefreshCw className="animate-spin" size={20} /> Solving…</>
-                ) : (
-                  <>⚡ SOLVE IT!</>
-                )}
+            {/* Top row: secondary controls */}
+            <div className="action-secondary-row">
+              <button className="hint-btn" onClick={handleHint} aria-label="Hint" title="Hint">💡</button>
+              {gameState.current_level_id === 1 && (
+                <button
+                  className={`auto-solve-btn${isAutoSolving ? ' auto-solve-btn--solving' : ''}`}
+                  onClick={handleAutoSolve}
+                  disabled={isAutoSolving || gameState.status === 'executing'}
+                >
+                  {isAutoSolving ? <><RefreshCw className="animate-spin" size={16} /> Solving…</> : <>⚡ SOLVE IT!</>}
+                </button>
+              )}
+              <button className={`mic-btn${isListening ? ' listening' : ''}`} onClick={startListening} aria-label="Voice">
+                {isListening ? <MicOff size={22} /> : <Mic size={22} />}
               </button>
-            )}
-
+              <button className="reset-btn" onClick={handleReset} aria-label="Reset">🔄</button>
+            </div>
+            {/* Bottom row: main run button — always full width */}
             <button
               className="run-button"
               onClick={handleRun}
               disabled={isExecutingOrRunning}
               aria-label="Run the program"
             >
-              {isExecutingOrRunning ? (
-                <><RefreshCw className="animate-spin" size={28} /> Running…</>
-              ) : (
-                <>▶ LET'S GO!</>
-              )}
-            </button>
-
-            <button
-              className={`mic-btn${isListening ? ' listening' : ''}`}
-              onClick={startListening}
-              aria-label={isListening ? 'Listening…' : 'Talk to Lumi'}
-              title="Voice"
-            >
-              {isListening ? <MicOff size={26} /> : <Mic size={26} />}
-            </button>
-
-            <button
-              className="reset-btn"
-              onClick={handleReset}
-              aria-label="Reset level"
-              title="Reset"
-            >
-              🔄
+              {isExecutingOrRunning
+                ? <><RefreshCw className="animate-spin" size={24} /> Running…</>
+                : <>▶ LET'S GO!</>}
             </button>
           </div>
 
