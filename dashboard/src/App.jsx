@@ -29,10 +29,10 @@ if (API_BASE !== 'http://localhost:8000' || !localStorage.getItem('lumi_api_url'
 
 // ─── Command display map ───────────────────────────────────────────────────────
 const CMD_CONFIG = {
-  forward:    { emoji: '🟢', label: '▲' },
-  turn_right: { emoji: '🔵', label: '↻' },
-  turn_left:  { emoji: '🟡', label: '↺' },
-  loop:       { emoji: '🔴', label: '↩' },
+  forward:    { emoji: '⬆️', label: 'GO' },
+  turn_right: { emoji: '↩️', label: 'RIGHT' },
+  turn_left:  { emoji: '↪️', label: 'LEFT' },
+  loop:       { emoji: '🔁', label: 'LOOP' },
 };
 
 // ─── Client-side BFS (mirrors server lumi_ai.py) ─────────────────────────────
@@ -220,7 +220,15 @@ function App() {
 
   const handleWsMessage = useCallback((newState) => {
     if (newState.robot_status) setLiveRobotStatus(newState.robot_status);
-    setGameState(prev => ({ ...prev, ...newState }));
+    setGameState(prev => ({
+      ...prev,
+      ...newState,
+      // If server omits the question key (old server / partial broadcast),
+      // treat it as null so the overlay never gets stuck on screen.
+      question: Object.prototype.hasOwnProperty.call(newState, 'question')
+        ? newState.question
+        : null,
+    }));
 
     if (
       newState.feedback &&
@@ -521,6 +529,7 @@ function App() {
       {showCamera && (
         <CameraView
           onClose={() => setShowCamera(false)}
+          apiBase={API_BASE}
         />
       )}
 
@@ -657,140 +666,136 @@ function App() {
         </div>
       </div>
 
-      {/* ── GAME AREA ──────────────────────────────────────────────────── */}
-      <div className="game-area">
-        {/* Speech bubble */}
-        {showBubble && gameState.feedback && (
-          <div
-            className="lumi-speech-bubble"
-            aria-live="polite"
-            aria-label={gameState.feedback}
-          >
-            {gameState.feedback.length > 60
-              ? gameState.feedback.slice(0, 58) + '…'
-              : gameState.feedback}
-          </div>
-        )}
+      {/* ── CONTENT AREA (2-col on desktop) ───────────────────────────── */}
+      <div className="content-area">
 
-        <div className="grid-wrapper">
-          <GridBoard
-            grid_size={gameState.grid_size}
-            robot_pos={gameState.robot_pos}
-            robot_direction={gameState.robot_direction}
-            start_pos={gameState.start_pos}
-            goal={gameState.goal}
-            obstacles={gameState.obstacles}
-            path={gameState.path}
-            status={gameState.status}
-          />
-        </div>
-      </div>
-
-      {/* ── DAILY CHALLENGE CARD ───────────────────────────────────────── */}
-      {dailyChallenge && (
-        <DailyChallenge
-          onPlay={handleDailyPlay}
-        />
-      )}
-
-      {/* ── BLOCK STRIP ────────────────────────────────────────────────── */}
-      <div className="block-strip-wrapper">
-        <div className="block-strip-label">MOVES</div>
-        <div className="block-strip" role="list" aria-label="Detected commands">
-          {gameState.commands.length === 0 ? (
-            <div className="block-strip-empty">
-              <span>🔍</span>
-              <span>Show your LEGO blocks!</span>
+        {/* ── GAME AREA ──────────────────────────────────────────────────── */}
+        <div className="game-area">
+          {showBubble && gameState.feedback && (
+            <div
+              className="lumi-speech-bubble"
+              aria-live="polite"
+              aria-label={gameState.feedback}
+            >
+              {gameState.feedback.length > 60
+                ? gameState.feedback.slice(0, 58) + '…'
+                : gameState.feedback}
             </div>
-          ) : (
-            gameState.commands.map((cmd, idx) => {
-              const cfg    = CMD_CONFIG[cmd] ?? { emoji: '❓', label: '?' };
-              const isExec = isExecutingOrRunning && idx === 0;
-              return (
-                <div
-                  key={idx}
-                  className={`block-tile block-tile-${cmd}${isExec ? ' executing-tile' : ''}`}
-                  role="listitem"
-                  aria-label={cmd.replace('_', ' ')}
-                >
-                  <span aria-hidden="true">{cfg.emoji}</span>
-                  <span className="block-tile-idx">{idx + 1}</span>
-                </div>
-              );
-            })
           )}
+
+          <div className="grid-wrapper">
+            <GridBoard
+              grid_size={gameState.grid_size}
+              robot_pos={gameState.robot_pos}
+              robot_direction={gameState.robot_direction}
+              start_pos={gameState.start_pos}
+              goal={gameState.goal}
+              obstacles={gameState.obstacles}
+              path={gameState.path}
+              status={gameState.status}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* ── ACTION BAR ─────────────────────────────────────────────────── */}
-      <div className="action-bar">
-        {/* Hint */}
-        <button
-          className="hint-btn"
-          onClick={handleHint}
-          aria-label="Get a hint"
-          title="Hint"
-        >
-          💡
-        </button>
+        {/* ── SIDEBAR (blocks + actions) ─────────────────────────────────── */}
+        <div className="sidebar">
 
-        {/* Auto-solve — only shown on level 1 (first challenge) */}
-        {gameState.current_level_id === 1 && (
-          <button
-            className={`auto-solve-btn${isAutoSolving ? ' auto-solve-btn--solving' : ''}`}
-            onClick={handleAutoSolve}
-            disabled={isAutoSolving || gameState.status === 'executing'}
-            aria-label="Auto-solve level 1"
-            title="Solve it for me!"
-          >
-            {isAutoSolving ? (
-              <>
-                <RefreshCw className="animate-spin" size={20} />
-                Solving…
-              </>
-            ) : (
-              <>⚡ SOLVE IT!</>
-            )}
-          </button>
-        )}
-
-        {/* Run */}
-        <button
-          className="run-button"
-          onClick={handleRun}
-          disabled={isExecutingOrRunning}
-          aria-label="Run the program"
-        >
-          {isExecutingOrRunning ? (
-            <>
-              <RefreshCw className="animate-spin" size={28} />
-              Running…
-            </>
-          ) : (
-            <>▶ LET'S GO!</>
+          {/* Daily challenge banner at top of sidebar */}
+          {dailyChallenge && (
+            <DailyChallenge onPlay={handleDailyPlay} />
           )}
-        </button>
 
-        {/* Mic */}
-        <button
-          className={`mic-btn${isListening ? ' listening' : ''}`}
-          onClick={startListening}
-          aria-label={isListening ? 'Listening…' : 'Talk to Lumi'}
-          title="Voice"
-        >
-          {isListening ? <MicOff size={26} /> : <Mic size={26} />}
-        </button>
+          {/* ── BLOCK STRIP ──────────────────────────────────────────────── */}
+          <div className="block-strip-wrapper">
+            <div className="block-strip-label">MOVES</div>
+            <div className="block-strip" role="list" aria-label="Detected commands">
+              {gameState.commands.length === 0 ? (
+                <div className="block-strip-empty">
+                  <span>🔍</span>
+                  <span>Show your LEGO blocks!</span>
+                </div>
+              ) : (
+                gameState.commands.map((cmd, idx) => {
+                  const cfg    = CMD_CONFIG[cmd] ?? { emoji: '❓', label: '?' };
+                  const isExec = isExecutingOrRunning && idx === 0;
+                  return (
+                    <div
+                      key={idx}
+                      className={`block-tile block-tile-${cmd}${isExec ? ' executing-tile' : ''}`}
+                      role="listitem"
+                      aria-label={cmd.replace('_', ' ')}
+                    >
+                      <span className="block-tile-emoji" aria-hidden="true">{cfg.emoji}</span>
+                      <span className="block-tile-label">{cfg.label}</span>
+                      <span className="block-tile-idx">{idx + 1}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
 
-        {/* Reset */}
-        <button
-          className="reset-btn"
-          onClick={handleReset}
-          aria-label="Reset level"
-          title="Reset"
-        >
-          🔄
-        </button>
-      </div>
+          {/* ── ACTION BAR ───────────────────────────────────────────────── */}
+          <div className="action-bar">
+            <button
+              className="hint-btn"
+              onClick={handleHint}
+              aria-label="Get a hint"
+              title="Hint"
+            >
+              💡
+            </button>
+
+            {gameState.current_level_id === 1 && (
+              <button
+                className={`auto-solve-btn${isAutoSolving ? ' auto-solve-btn--solving' : ''}`}
+                onClick={handleAutoSolve}
+                disabled={isAutoSolving || gameState.status === 'executing'}
+                aria-label="Auto-solve level 1"
+                title="Solve it for me!"
+              >
+                {isAutoSolving ? (
+                  <><RefreshCw className="animate-spin" size={20} /> Solving…</>
+                ) : (
+                  <>⚡ SOLVE IT!</>
+                )}
+              </button>
+            )}
+
+            <button
+              className="run-button"
+              onClick={handleRun}
+              disabled={isExecutingOrRunning}
+              aria-label="Run the program"
+            >
+              {isExecutingOrRunning ? (
+                <><RefreshCw className="animate-spin" size={28} /> Running…</>
+              ) : (
+                <>▶ LET'S GO!</>
+              )}
+            </button>
+
+            <button
+              className={`mic-btn${isListening ? ' listening' : ''}`}
+              onClick={startListening}
+              aria-label={isListening ? 'Listening…' : 'Talk to Lumi'}
+              title="Voice"
+            >
+              {isListening ? <MicOff size={26} /> : <Mic size={26} />}
+            </button>
+
+            <button
+              className="reset-btn"
+              onClick={handleReset}
+              aria-label="Reset level"
+              title="Reset"
+            >
+              🔄
+            </button>
+          </div>
+
+        </div>{/* /sidebar */}
+      </div>{/* /content-area */}
 
       {/* ── OVERLAYS ───────────────────────────────────────────────────── */}
       {gameState.achievement && (
