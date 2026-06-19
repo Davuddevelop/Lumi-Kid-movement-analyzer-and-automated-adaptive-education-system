@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumi — Complete System Summary</title>
+<style>
+  :root {
+    --indigo:   #5B4FE8;
+    --indigo-d: #4338CA;
+    --purple:   #A855F7;
+    --yellow:   #FFD43B;
+    --green:    #00C853;
+    --coral:    #FF5252;
+    --cyan:     #00BCD4;
+    --orange:   #FF9F43;
+    --ink:      #1E1B4B;
+    --muted:    #6B7BAE;
+    --card:     #ffffff;
+    --line:     #E5EAFF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(160deg, #EEF2FF 0%, #F5EEFF 45%, #FFF0F5 100%);
+    color: var(--ink); line-height: 1.6; padding: 0 0 80px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 22px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 60%, #A855F7 100%);
+    color: #fff; text-align: center; padding: 60px 22px 68px;
+    box-shadow: 0 8px 40px rgba(79,70,229,0.35); border-radius: 0 0 40px 40px;
+  }
+  .hero .logo { font-size: 3.2rem; font-weight: 900; letter-spacing: 1px; display: inline-flex; gap: 2px; }
+  .hero .logo .ai { color: var(--yellow); margin-left: 10px; }
+  .hero .tag { font-size: 1.2rem; font-weight: 700; opacity: 0.96; margin-top: 12px; max-width: 660px; margin-inline: auto; }
+  .hero .pills { margin-top: 22px; display: flex; gap: 9px; justify-content: center; flex-wrap: wrap; }
+  .pill { background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.4); border-radius: 50px; padding: 6px 15px; font-weight: 800; font-size: 0.85rem; }
+
+  section { margin-top: 46px; }
+  h2 { font-size: 1.6rem; font-weight: 900; color: var(--indigo-d); display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  h2 .dot { width: 12px; height: 26px; border-radius: 6px; background: var(--purple); }
+  h3.sub { font-size: 1.05rem; color: var(--indigo); font-weight: 800; margin: 18px 0 10px; }
+  p.lead { font-size: 1.1rem; }
+
+  /* Flow */
+  .flow {
+    display: flex; align-items: stretch; flex-wrap: wrap;
+    background: var(--card); border: 2px solid var(--line); border-radius: 24px;
+    padding: 24px 18px; box-shadow: 0 6px 24px rgba(91,79,232,0.10);
+  }
+  .flow .step { flex: 1; min-width: 120px; text-align: center; padding: 8px; }
+  .flow .step .emoji { font-size: 2.4rem; }
+  .flow .step .name { font-weight: 900; margin-top: 6px; }
+  .flow .step .sub { font-size: 0.8rem; color: var(--muted); font-weight: 700; }
+  .flow .arrow { display: flex; align-items: center; font-size: 1.7rem; color: var(--purple); font-weight: 900; }
+
+  /* Blocks */
+  .blocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .block { background: var(--card); border-radius: 18px; padding: 14px; border: 2px solid var(--line); box-shadow: 0 4px 16px rgba(91,79,232,0.08); display: flex; align-items: center; gap: 12px; }
+  .block .swatch { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
+  .block .cmd { font-weight: 900; font-size: 0.95rem; }
+  .block .act { font-size: 0.78rem; color: var(--muted); font-weight: 700; }
+  .sw-green{background:#00C853;}.sw-blue{background:#2979FF;}.sw-yellow{background:#FFD43B;}
+  .sw-red{background:#FF5252;}.sw-orange{background:#FF9F43;}.sw-purple{background:#A855F7;}
+
+  /* Cards */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+  .card { background: var(--card); border-radius: 22px; padding: 20px; border: 2px solid var(--line); box-shadow: 0 6px 22px rgba(91,79,232,0.09); transition: transform 0.2s; }
+  .card:hover { transform: translateY(-4px); }
+  .card .ico { font-size: 1.9rem; }
+  .card h3 { font-size: 1.08rem; margin: 8px 0 6px; color: var(--indigo-d); }
+  .card p { font-size: 0.92rem; color: var(--muted); font-weight: 600; }
+
+  /* Tables */
+  .tbl-wrap { background: var(--card); border: 2px solid var(--line); border-radius: 20px; overflow: hidden; box-shadow: 0 6px 22px rgba(91,79,232,0.09); }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #EEF2FF; color: var(--indigo-d); text-align: left; padding: 12px 16px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 11px 16px; border-top: 1px solid var(--line); font-weight: 600; font-size: 0.95rem; }
+  td.k { font-weight: 900; color: var(--indigo); white-space: nowrap; }
+  code { background: #EEF2FF; padding: 1px 7px; border-radius: 6px; font-size: 0.85rem; color: var(--indigo-d); font-weight: 700; }
+
+  /* LED legend chips */
+  .leds { display: flex; flex-wrap: wrap; gap: 10px; }
+  .led { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 8px 14px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .led .bulb { width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+  /* Deploy */
+  .deploy { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .deploy .box { background: var(--card); border: 2px solid var(--line); border-radius: 20px; padding: 20px; }
+  .deploy .box.f { border-top: 6px solid var(--indigo); }
+  .deploy .box.b { border-top: 6px solid var(--green); }
+  .deploy .box.r { border-top: 6px solid var(--orange); }
+  .deploy .box h3 { color: var(--indigo-d); font-size: 1.08rem; margin-bottom: 4px; }
+  .deploy .box .where { font-size: 0.8rem; color: var(--muted); font-weight: 800; text-transform: uppercase; }
+  .deploy .box p { font-size: 0.9rem; color: var(--muted); font-weight: 600; margin-top: 8px; }
+
+  footer { text-align: center; margin-top: 56px; color: var(--muted); font-weight: 700; font-size: 0.88rem; }
+  @media (max-width: 680px) { .deploy { grid-template-columns: 1fr; } .hero .logo { font-size: 2.5rem; } }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="logo">LUMI<span class="ai">AI</span></div>
+    <div class="tag">A screen-free coding playground where kids program a real robot with physical colored blocks — backed by computer vision, an ESP32 robot, and an adaptive AI tutor 🤖</div>
+    <div class="pills">
+      <span class="pill">Ages 5–8</span>
+      <span class="pill">Computer Vision</span>
+      <span class="pill">ESP32 Robot</span>
+      <span class="pill">Adaptive AI Tutor</span>
+      <span class="pill">Cloud + Hardware</span>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- IDEA -->
+    <section>
+      <h2><span class="dot"></span>What Lumi Is</h2>
+      <p class="lead">
+        Lumi teaches children <strong>algorithmic thinking through physical play</strong> — no keyboard, no screen-staring.
+        Kids arrange colored blocks on a mat, a camera reads the sequence, and a real robot car drives the exact path
+        they "programmed." Mistakes become visible and fixable, turning <em>sequencing</em>, <em>loops</em> and
+        <em>debugging</em> into a hands-on game guided by a friendly AI tutor.
+      </p>
+    </section>
+
+    <!-- FLOW -->
+    <section>
+      <h2><span class="dot"></span>The Full Loop</h2>
+      <div class="flow">
+        <div class="step"><div class="emoji">🟢🔵🟡</div><div class="name">Place Blocks</div><div class="sub">Kids arrange L→R</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="emoji">📷</div><div class="name">Camera Scans</div><div class="sub">OpenCV / HSV</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="emoji">🖥️</div><div class="name">Server + UI</div><div class="sub">FastAPI + React</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="emoji">📡</div><div class="name">WebSocket</div><div class="sub">commands over wss</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="emoji">🤖</div><div class="name">Robot Drives</div><div class="sub">ESP32 + encoders</div></div>
+      </div>
+    </section>
+
+    <!-- BLOCKS -->
+    <section>
+      <h2><span class="dot"></span>The Block Language</h2>
+      <div class="blocks">
+        <div class="block"><div class="swatch sw-green"></div><div><div class="cmd">forward</div><div class="act">Move one step</div></div></div>
+        <div class="block"><div class="swatch sw-blue"></div><div><div class="cmd">turn_right</div><div class="act">Rotate 90° CW</div></div></div>
+        <div class="block"><div class="swatch sw-yellow"></div><div><div class="cmd">turn_left</div><div class="act">Rotate 90° CCW</div></div></div>
+        <div class="block"><div class="swatch sw-red"></div><div><div class="cmd">loop</div><div class="act">Repeat last 2×</div></div></div>
+        <div class="block"><div class="swatch sw-orange"></div><div><div class="cmd">loop_start</div><div class="act">Begin loop</div></div></div>
+        <div class="block"><div class="swatch sw-purple"></div><div><div class="cmd">loop_end</div><div class="act">Repeat contents</div></div></div>
+      </div>
+    </section>
+
+    <!-- HARDWARE -->
+    <section>
+      <h2><span class="dot"></span>Hardware — The Lumi-Bot</h2>
+
+      <h3 class="sub">📦 Bill of Materials</h3>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Part</th><th>Purpose</th></tr>
+          <tr><td class="k">ESP32-WROOM-32</td><td>The brain — WiFi micro-controller</td></tr>
+          <tr><td class="k">L298N / TB6612FNG</td><td>Motor driver board</td></tr>
+          <tr><td class="k">2× DC gear motors <em>w/ encoders</em></td><td>Wheels + distance feedback</td></tr>
+          <tr><td class="k">HC-SR04</td><td>Ultrasonic obstacle detection</td></tr>
+          <tr><td class="k">WS2812B NeoPixel ring (12 LED)</td><td>Emotion / status light</td></tr>
+          <tr><td class="k">7.4V LiPo (2S) battery</td><td>Power</td></tr>
+          <tr><td class="k">100kΩ + 47kΩ resistors</td><td>Battery voltage divider</td></tr>
+          <tr><td class="k">Chassis, 2 wheels + caster</td><td>The body</td></tr>
+        </table>
+      </div>
+
+      <h3 class="sub">🔌 Wiring (exact firmware pins)</h3>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>ESP32 Pin</th><th>Connected To</th></tr>
+          <tr><td class="k">GPIO 25 (PWM)</td><td>Left motor speed — ENA / PWMA</td></tr>
+          <tr><td class="k">GPIO 26 / 27</td><td>Left motor direction — IN1 / IN2</td></tr>
+          <tr><td class="k">GPIO 14 (PWM)</td><td>Right motor speed — ENB / PWMB</td></tr>
+          <tr><td class="k">GPIO 12 / 13</td><td>Right motor direction — IN3 / IN4</td></tr>
+          <tr><td class="k">GPIO 34 / 35</td><td>Left / Right encoder signals</td></tr>
+          <tr><td class="k">GPIO 5 / 18</td><td>HC-SR04 TRIG / ECHO (3.3V divider on ECHO)</td></tr>
+          <tr><td class="k">GPIO 4</td><td>NeoPixel DATA in</td></tr>
+          <tr><td class="k">GPIO 36</td><td>Battery voltage divider</td></tr>
+        </table>
+      </div>
+
+      <h3 class="sub">🎯 Calibration constants</h3>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Constant</th><th>Default</th><th>Means</th></tr>
+          <tr><td class="k"><code>TICKS_PER_CELL</code></td><td>430</td><td>Encoder ticks = one grid square</td></tr>
+          <tr><td class="k"><code>TICKS_PER_90DEG</code></td><td>205</td><td>Encoder ticks = a 90° turn</td></tr>
+          <tr><td class="k"><code>MOTOR_SPEED</code></td><td>170</td><td>Forward speed (0–255)</td></tr>
+          <tr><td class="k"><code>TURN_SPEED</code></td><td>140</td><td>Turn speed (0–255)</td></tr>
+        </table>
+      </div>
+
+      <h3 class="sub">💡 LED status language</h3>
+      <div class="leds">
+        <span class="led"><span class="bulb" style="color:#A855F7"></span>Booting / Ready</span>
+        <span class="led"><span class="bulb" style="color:#2979FF"></span>Forward</span>
+        <span class="led"><span class="bulb" style="color:#00BCD4"></span>Turn right</span>
+        <span class="led"><span class="bulb" style="color:#FFD43B"></span>Turn left</span>
+        <span class="led"><span class="bulb" style="color:#00C853"></span>Connected / Success</span>
+        <span class="led"><span class="bulb" style="color:#FF5252"></span>Error / Obstacle</span>
+        <span class="led"><span class="bulb" style="color:#FF9F43"></span>Emergency stop</span>
+        <span class="led"><span class="bulb" style="background:linear-gradient(90deg,red,orange,yellow,green,blue,violet);box-shadow:none"></span>Celebration! 🎉</span>
+      </div>
+    </section>
+
+    <!-- SOFTWARE -->
+    <section>
+      <h2><span class="dot"></span>Software Stack</h2>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Layer</th><th>File / Tech</th><th>Role</th></tr>
+          <tr><td class="k">Backend hub</td><td><code>server.py</code> — FastAPI + WebSocket</td><td>Broadcasts live game state to dashboard & robot</td></tr>
+          <tr><td class="k">Vision</td><td><code>color_detector.py</code> — OpenCV</td><td>HSV color detection, sorts blocks left→right</td></tr>
+          <tr><td class="k">Robot control</td><td><code>robot_controller.py</code> / <code>esp32_bridge.py</code></td><td>Sends commands to ESP32, reads encoder telemetry</td></tr>
+          <tr><td class="k">Firmware</td><td><code>lumi_robot.ino</code> (Arduino/ESP32)</td><td>Drives motors with encoder feedback over wss</td></tr>
+          <tr><td class="k">AI brain</td><td><code>lumi_ai.py</code>, <code>mind_analyzer.py</code></td><td>BFS path-planning, auto-solve, Claude chat tutor</td></tr>
+          <tr><td class="k">Frontend</td><td><code>dashboard/</code> — React + Vite</td><td>Kid UI: animated grid, robot, blocks, LET'S GO!</td></tr>
+          <tr><td class="k">Levels</td><td><code>level_system.py</code>, <code>levels.json</code></td><td>Progressive missions with obstacles & goals</td></tr>
+          <tr><td class="k">Simulator</td><td><code>robot_simulator.py</code></td><td>Software-only robot when no hardware present</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ADAPTIVE -->
+    <section>
+      <h2><span class="dot"></span>Adaptive Learning Engine</h2>
+      <div class="cards">
+        <div class="card"><div class="ico">❓</div><h3>Guided Questions</h3><p>Context prompts after a crash or win, with voice + button answers and response-time analysis.</p></div>
+        <div class="card"><div class="ico">🏅</div><h3>Achievements</h3><p>15 badges across accuracy, speed, efficiency & milestones.</p></div>
+        <div class="card"><div class="ico">🎭</div><h3>Personality Modes</h3><p>Coach, Challenger & Friendly tones adapt to the child.</p></div>
+        <div class="card"><div class="ico">🧠</div><h3>Interaction Memory</h3><p>Detects improving / struggling / mastering and adjusts feedback.</p></div>
+        <div class="card"><div class="ico">💬</div><h3>AI Chat Buddy</h3><p>Claude-powered tutor that gives hints, not answers, in kid-simple words.</p></div>
+        <div class="card"><div class="ico">📊</div><h3>Teacher Analytics</h3><p>Logs every attempt and surfaces common mistake patterns.</p></div>
+      </div>
+    </section>
+
+    <!-- DEPLOY -->
+    <section>
+      <h2><span class="dot"></span>How It's Deployed</h2>
+      <div class="deploy">
+        <div class="box f"><div class="where">Frontend</div><h3>Vercel</h3><p>React dashboard + a serverless <code>/api/chat</code> so the AI tutor works even with no Python backend. Also supports a full software-only browser demo (client-side BFS animates the robot).</p></div>
+        <div class="box b"><div class="where">Backend</div><h3>Render</h3><p>FastAPI + WebSocket server, holds the <code>ANTHROPIC_API_KEY</code>, runs levels, vision intake, AI and analytics.</p></div>
+        <div class="box r"><div class="where">Hardware</div><h3>ESP32 Robot</h3><p>Connects over 2.4GHz WiFi via secure WebSocket (wss:443) to the server, registers itself, and executes missions with encoder precision.</p></div>
+      </div>
+    </section>
+
+    <footer>
+      Lumi — Kid Movement Analyzer &amp; Automated Adaptive Education System · MIT License © 2026 Davud Ali
+    </footer>
+
+  </div>
+</body>
+</html>

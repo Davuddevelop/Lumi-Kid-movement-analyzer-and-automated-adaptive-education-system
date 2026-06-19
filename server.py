@@ -6,6 +6,7 @@ import uvicorn
 import asyncio
 import json
 import os
+import base64
 from mind_analyzer import MindAnalyzer
 from analytics_logger import MissionLogger
 from guided_questions import GuidedQuestionSystem
@@ -108,10 +109,8 @@ class RobotState:
             "stars_total": self.stars_total,
             "achievement": self.achievement,
         }
-        # Add current question if any
-        q_data = question_system.get_current_question_data()
-        if q_data:
-            data["question"] = q_data
+        # Always include question key — None tells the client to clear the overlay
+        data["question"] = question_system.get_current_question_data()
         # Include live robot status so dashboard can show connection badge
         data["robot_status"] = {
             "connected": len(robot_bridge.list_robots()) > 0,
@@ -386,6 +385,49 @@ async def load_demo():
     
     await broadcast_state()
     return {"message": f"Loaded: {demo['name']}"}
+
+# ── Computer Vision Endpoint ──────────────────────────────────────────────────
+
+class VisionRequest(BaseModel):
+    image: str  # base64-encoded JPEG/PNG (data URI or raw base64)
+
+@app.post("/api/vision/analyze")
+async def vision_analyze(req: VisionRequest):
+    """
+    Accepts a base64-encoded camera frame, runs OpenCV HSV color detection
+    to find LEGO blocks, and returns the detected command sequence.
+    """
+    try:
+        import cv2
+        import numpy as np
+        from color_detector import detect_and_sort_blocks
+
+        # Strip data URI prefix if present
+        img_b64 = req.image
+        if ',' in img_b64:
+            img_b64 = img_b64.split(',', 1)[1]
+
+        img_bytes = base64.b64decode(img_b64)
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if frame is None:
+            return {"commands": [], "blocks": [], "error": "Could not decode image"}
+
+        commands, blocks = detect_and_sort_blocks(frame, min_area=400)
+
+        # Serialize blocks without the raw contour (not JSON-serializable)
+        safe_blocks = [
+            {"color": b["color"], "x": b["x"], "bbox": list(b["bbox"])}
+            for b in blocks
+        ]
+        return {"commands": commands, "blocks": safe_blocks}
+
+    except ImportError as e:
+        return {"commands": [], "blocks": [], "error": f"OpenCV not available: {e}"}
+    except Exception as e:
+        return {"commands": [], "blocks": [], "error": str(e)}
+
 
 class ChatMessage(BaseModel):
     role: str

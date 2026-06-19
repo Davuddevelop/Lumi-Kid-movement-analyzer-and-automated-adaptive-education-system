@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumi AI — Layihə Hesabatı</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Source+Sans+3:wght@400;600;700;900&display=swap');
+
+  :root {
+    --ink:     #1a1a2e;
+    --muted:   #555577;
+    --light:   #888899;
+    --indigo:  #4338CA;
+    --purple:  #7C3AED;
+    --accent:  #5B4FE8;
+    --line:    #e2e2ef;
+    --bg:      #fafafa;
+    --page:    #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+    color: var(--ink);
+    line-height: 1.75;
+    font-size: 1rem;
+    padding: 40px 20px 80px;
+  }
+
+  /* Page container */
+  .page {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+
+  /* Cover */
+  .cover {
+    background: linear-gradient(150deg, #312E81 0%, #4F46E5 50%, #7C3AED 100%);
+    padding: 64px 60px 52px;
+    color: white;
+  }
+  .cover .org {
+    font-size: 0.82rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    opacity: 0.7; margin-bottom: 32px;
+  }
+  .cover .logo-row {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
+  }
+  .cover .logo-icon {
+    width: 56px; height: 56px; background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.3); border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+  }
+  .cover .project-name {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 2.6rem; font-weight: 900; letter-spacing: 1px;
+  }
+  .cover .project-name span { color: #FFD43B; }
+  .cover h1 {
+    font-family: 'Merriweather', serif;
+    font-size: 1.5rem; font-weight: 300;
+    line-height: 1.4; max-width: 540px;
+    opacity: 0.95; margin-bottom: 36px;
+  }
+  .cover-meta {
+    display: grid; grid-template-columns: repeat(3, auto); gap: 28px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 28px;
+  }
+  .cover-meta .m { }
+  .cover-meta .ml { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.55; }
+  .cover-meta .mv { font-size: 0.95rem; font-weight: 700; opacity: 0.9; margin-top: 2px; }
+
+  /* Body */
+  .body { padding: 52px 60px; }
+
+  /* TOC */
+  .toc {
+    background: #F5F5FB;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+  }
+  .toc h3 {
+    font-size: 0.78rem; font-weight: 900; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--accent); margin-bottom: 12px;
+  }
+  .toc ol { list-style: none; counter-reset: toc; }
+  .toc ol li { counter-increment: toc; display: flex; align-items: baseline; gap: 8px; padding: 4px 0; }
+  .toc ol li::before { content: counter(toc) "."; font-weight: 900; color: var(--accent); min-width: 20px; font-size: 0.9rem; }
+  .toc ol li a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+  .toc ol li a:hover { color: var(--accent); }
+  .toc .dots { flex: 1; border-bottom: 1.5px dotted #ccc; margin-bottom: 2px; }
+  .toc .pg { color: var(--light); font-size: 0.85rem; font-weight: 700; }
+
+  /* Sections */
+  .section { margin-bottom: 52px; }
+  .section-header {
+    display: flex; align-items: flex-start; gap: 16px; margin-bottom: 22px;
+    padding-bottom: 14px; border-bottom: 2px solid var(--line);
+  }
+  .section-num {
+    background: var(--accent); color: white;
+    border-radius: 10px; width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 1rem; flex-shrink: 0; margin-top: 2px;
+  }
+  .section h2 {
+    font-family: 'Merriweather', serif;
+    font-size: 1.35rem; font-weight: 700;
+    color: var(--ink); line-height: 1.3;
+  }
+
+  p { margin-bottom: 14px; color: var(--ink); font-size: 1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* Subsection */
+  h3.sub {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 1.05rem; font-weight: 900;
+    color: var(--indigo); margin: 24px 0 10px;
+    padding-left: 12px; border-left: 3px solid var(--indigo);
+  }
+
+  /* Lists */
+  ul.report, ol.report { padding-left: 22px; margin-bottom: 14px; }
+  ul.report li, ol.report li { margin-bottom: 7px; font-size: 1rem; }
+
+  /* Callout box */
+  .callout {
+    background: #EEF2FF; border: 1px solid #C7D2FE;
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px; margin: 18px 0;
+    font-size: 0.96rem; color: #312E81; font-weight: 600;
+  }
+  .callout strong { font-weight: 900; }
+
+  /* Info table */
+  .rtable { width: 100%; border-collapse: collapse; margin: 16px 0 20px; font-size: 0.93rem; }
+  .rtable thead tr { background: #F0EEFF; }
+  .rtable th { text-align: left; padding: 10px 14px; font-weight: 900; color: var(--indigo); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.4px; }
+  .rtable td { padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+  .rtable tr:last-child td { border-bottom: 1px solid var(--line); }
+  .rtable td:first-child { font-weight: 700; color: var(--indigo); white-space: nowrap; }
+
+  /* Phase boxes */
+  .phases { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  .ph {
+    border-radius: 12px; padding: 18px;
+    border: 1px solid var(--line);
+  }
+  .ph .ph-label { font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+  .ph h4 { font-size: 1rem; font-weight: 900; color: var(--ink); margin-bottom: 8px; }
+  .ph ul { list-style: none; padding: 0; }
+  .ph ul li { font-size: 0.88rem; padding: 3px 0 3px 16px; position: relative; color: var(--muted); font-weight: 600; }
+  .ph ul li::before { content: '·'; position: absolute; left: 4px; color: var(--accent); font-weight: 900; }
+  .ph-1 { background: #EEF2FF; } .ph-1 .ph-label { color: var(--indigo); }
+  .ph-2 { background: #E8F5E9; } .ph-2 .ph-label { color: #2E7D32; }
+  .ph-3 { background: #FFF8E1; } .ph-3 .ph-label { color: #E65100; }
+  .ph-4 { background: #FCE4EC; } .ph-4 .ph-label { color: #880E4F; }
+
+  /* Quote */
+  .quote {
+    border-left: 4px solid var(--accent);
+    padding: 14px 20px; margin: 20px 0;
+    background: #FAFAFE;
+  }
+  .quote p { font-style: italic; color: var(--muted); margin: 0; font-family: 'Merriweather', serif; font-size: 0.95rem; }
+  .quote cite { display: block; font-size: 0.8rem; color: var(--light); font-weight: 700; margin-top: 8px; font-style: normal; }
+
+  /* Impact stats */
+  .stats-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+  .stat-box {
+    flex: 1; min-width: 120px;
+    background: var(--ink); border-radius: 12px; padding: 16px;
+    color: white;
+  }
+  .stat-box .sv { font-size: 1.7rem; font-weight: 900; color: #FFD43B; }
+  .stat-box .sl { font-size: 0.77rem; font-weight: 700; opacity: 0.75; margin-top: 3px; line-height: 1.3; }
+
+  /* Divider */
+  hr.section-div { border: none; border-top: 1px solid var(--line); margin: 48px 0; }
+
+  /* Conclusion */
+  .conclusion {
+    background: linear-gradient(135deg, #312E81 0%, #4F46E5 100%);
+    border-radius: 12px; padding: 32px 36px; color: white; margin-top: 40px;
+  }
+  .conclusion h2 { font-family: 'Merriweather', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 14px; color: white; }
+  .conclusion p { color: rgba(255,255,255,0.88); font-size: 0.97rem; margin-bottom: 12px; }
+  .conclusion p:last-child { margin-bottom: 0; }
+
+  /* Footer */
+  .footer {
+    padding: 28px 60px;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8rem; color: var(--light); font-weight: 700;
+    background: #FAFAFA;
+  }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .page { box-shadow: none; border: none; }
+  }
+  @media (max-width: 640px) {
+    .body { padding: 36px 24px; }
+    .cover { padding: 40px 24px 36px; }
+    .cover-meta { grid-template-columns: 1fr 1fr; }
+    .phases { grid-template-columns: 1fr; }
+    .footer { flex-direction: column; gap: 8px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="org">Layihə Hesabatı · 2026</div>
+    <div class="logo-row">
+      <div class="logo-icon">🤖</div>
+      <div class="project-name">LUMI <span>AI</span></div>
+    </div>
+    <h1>Uşaqlar üçün Hərəkət Analizi əsaslı<br>Avtomatik Adaptiv Təhsil Sistemi</h1>
+    <div class="cover-meta">
+      <div class="m"><div class="ml">Müəllif</div><div class="mv">Davud Əli</div></div>
+      <div class="m"><div class="ml">Tarix</div><div class="mv">İyun 2026</div></div>
+      <div class="m"><div class="ml">Lisenziya</div><div class="mv">MIT — Açıq Mənbə</div></div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- TOC -->
+    <div class="toc">
+      <h3>Mündəricat</h3>
+      <ol>
+        <li><a href="#problem">Problemin Təsviri</a><span class="dots"></span></li>
+        <li><a href="#hell">Təklif Edilən Həll Yolu</a><span class="dots"></span></li>
+        <li><a href="#auditoriya">Hədəf Auditoriya</a><span class="dots"></span></li>
+        <li><a href="#icra">İcra Planı</a><span class="dots"></span></li>
+        <li><a href="#tesir">Potensial Təsir</a><span class="dots"></span></li>
+        <li><a href="#netice">Nəticə</a><span class="dots"></span></li>
+      </ol>
+    </div>
+
+    <!-- ─────────────────────────────────────────────
+         1. PROBLEMİN TƏSVİRİ
+    ───────────────────────────────────────────── -->
+    <div class="section" id="problem">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <h2>Problemin Təsviri</h2>
+      </div>
+
+      <p>
+        Müasir dünyada proqramlaşdırma savadlılığı artıq əsas həyat bacarıqlarından birinə çevrilmişdir. Lakin bu bacarığın uşaqlıq dövründə — beyin ən plastik olduğu 5–8 yaş arasında — mənimsənilməsi ciddi praktiki çətinliklərlə üzləşir.
+      </p>
+
+      <p>
+        Mövcud proqramlaşdırma təhsili alətlərinin böyük əksəriyyəti ekran mərkəzlidir: uşaqdan klaviaturada düzgün sintaksis yazmaq, siçanı dəqiq idarə etmək və abstrakt rəqəmsal mühitdə naviqasiya bacarığı tələb olunur. Bu tələblər 5–7 yaşlı uşaq üçün həddindən artıq mürəkkəbdir — nəticədə uşaq məzmundan əvvəl texniki maneə ilə üzləşir.
+      </p>
+
+      <h3 class="sub">Əsas problemlər</h3>
+
+      <p><strong>Mücərrədlik:</strong> Uşaqlar proqramın nə etdiyini görə bilmir. Nəticə ekranda animasiya kimi qalır — əllə tutmaq, fiziki olaraq hiss etmək mümkün deyil. Beyin inkişafı araşdırmaları göstərir ki, kiçik uşaqlar abstrakt anlayışları fiziki hərəkət vasitəsilə çox daha sürətli mənimsəyir.</p>
+
+      <p><strong>Erkən texniki maneə:</strong> Scratch, Blockly kimi alətlər belə 5 yaşlı uşaq üçün çox mürəkkəbdir. Klaviatura, siçan, interfeys naviqasiyası — bunların hamısı uşağın diqqətini əsl öyrənmə hədəfindən uzaqlaşdırır.</p>
+
+      <p><strong>Passiv öyrənmə:</strong> Mövcud platformalar uşağı ekrana baxan passiv izləyiciyə çevirir. Fiziki aktivlik, toxunma hissi, bədən hərəkəti — kiçik yaş üçün ən güclü öyrənmə kanalları — istifadə edilmir.</p>
+
+      <p><strong>Adaptasiya yoxluğu:</strong> Əksər sistemlər bütün uşaqlara eyni mövzu ardıcıllığını, eyni tempdə təqdim edir. Hər uşağın öyrənmə sürəti, güclü cəhətləri, çətinlik nöqtələri fərqlidir — lakin mövcud alətlər bunu nəzərə almır.</p>
+
+      <p><strong>Müəllim yükü:</strong> Sinif mühitində müəllim eyni anda 20–30 uşağın irəliləyişini real vaxtda izləyə bilmir. Fərdi geri bildirim vermək praktiki olaraq qeyri-mümkündür.</p>
+
+      <div class="callout">
+        <strong>Statistika:</strong> STEM araşdırmaları göstərir ki, uşaqların 72%-i proqramlaşdırmanı "çox mücərrəd" və "maraqlı deyil" kimi xarakterizə edir. Fiziki, toxunma əsaslı öyrənmə metodları isə eyni anlayışların mənimsənilməsini 2 dəfəyə qədər sürətləndirir.
+      </div>
+    </div>
+
+    <hr class="section-div">
+
+    <!-- ─────────────────────────────────────────────
+         2. HƏLL YOLU
+    ───────────────────────────────────────────── -->
+    <div class="section" id="hell">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <h2>Təklif Edilən Həll Yolu</h2>
+      </div>
+
+      <p>
+        Lumi AI, proqramlaşdırma təhsilini ekrandan çıxarıb fiziki oyuna çevirən inteqrasiya olunmuş sistemdir. Əsas fikir sadədir: <em>uşaq rəngli fiziki blokları düzərək öz proqramını "əllə yazır"</em>, kamera bu blokları oxuyur, server onları əmrlərə çevirir və real robot araba uşağın proqramladığı yolu əyani şəkildə yerinə yetirir.
+      </p>
+
+      <h3 class="sub">Sistemin işləmə prinsipi</h3>
+
+      <p>
+        Uşaq blokları xüsusi altlıq üzərindən soldan sağa düzür. Kompüter kamerası OpenCV kitabxanasından istifadə edərək HSV rəng spektrini analiz edir və hər blokun rəngini müəyyən edir. Rəng ardıcıllığı əmrlər siyahısına çevrilir, FastAPI serveri vasitəsilə həm veb panelə, həm də ESP32 əsaslı robot arabasına real vaxt WebSocket protokolu ilə ötürülür.
+      </p>
+
+      <h3 class="sub">Blok dili</h3>
+
+      <table class="rtable">
+        <thead>
+          <tr><th>Rəng</th><th>Əmr</th><th>Robot hərəkəti</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>🟢 Yaşıl</td><td>İrəli</td><td>Bir şəbəkə xanası irəli</td></tr>
+          <tr><td>🔵 Mavi</td><td>Sağa dön</td><td>90° saat yönündə fırla</td></tr>
+          <tr><td>🟡 Sarı</td><td>Sola dön</td><td>90° saat yönünə əks fırla</td></tr>
+          <tr><td>🔴 Qırmızı</td><td>Dövrə (2×)</td><td>Sonuncu əmri iki dəfə təkrarla</td></tr>
+          <tr><td>🟠 Narıncı</td><td>Dövrə başla</td><td>Dövrənin başlanğıc nişanı</td></tr>
+          <tr><td>🟣 Bənövşəyi</td><td>Dövrə bitir</td><td>Dövrənin içini təkrarla</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub">Hardware — Lumi-Bot</h3>
+
+      <p>
+        Robot araba ESP32-WROOM-32 mikrokontrollerini əsas beyin kimi istifadə edir. 2.4 GHz WiFi vasitəsilə serverə qoşulur, şifrəli WebSocket (wss://) protokolu üzərindən əmrlər alır. Hər hərəkətin dəqiqliyi Hall effektli encoder sensorları ilə — hər bir şəbəkə xanası üçün 430 encoder tikki — təmin edilir.
+      </p>
+
+      <table class="rtable">
+        <thead><tr><th>Komponent</th><th>Təyinat</th></tr></thead>
+        <tbody>
+          <tr><td>ESP32-WROOM-32</td><td>Əsas beyin, WiFi bağlantısı</td></tr>
+          <tr><td>L298N motor sürücüsü</td><td>DC motorların idarəsi</td></tr>
+          <tr><td>2× DC motor (encoderli)</td><td>Hərəkət + məsafə geri bildirimi</td></tr>
+          <tr><td>HC-SR04 ultrasəs sensoru</td><td>Maneə aşkarlanması</td></tr>
+          <tr><td>WS2812B NeoPixel (12 LED)</td><td>Status göstəricisi, emosiya ifadəsi</td></tr>
+          <tr><td>7.4V LiPo (2S) batareya</td><td>Əsas güc mənbəyi</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub">AI Tutor — Lumi</h3>
+
+      <p>
+        Sistem Anthropic Claude Haiku modeli əsasında işləyən uşaq dostu AI tutor təqdim edir. Tutor uşağın oyun vəziyyətini real vaxtda izləyir: uğur, uğursuzluq, tıxanma, əhval — bunları analiz edərək müvafiq reaksiya verir. Ən vacib prinsip isə budur: <em>Lumi cavabı heç vaxt birbaşa vermir, yalnız istiqamətləndirən suallar verir</em>.
+      </p>
+
+      <div class="callout">
+        <strong>Offline dəstək:</strong> Sistem serverə çıxış olmayan halda da tam işləyir. Klient tərəfli BFS (Genişliyinə Axtarış) alqoritmi robotun animasiyasını birbaşa brauzerdə icra edir; Vercel serverless funksiyası AI söhbətini Python backend-dən asılı olmadan təmin edir.
+      </div>
+    </div>
+
+    <hr class="section-div">
+
+    <!-- ─────────────────────────────────────────────
+         3. HƏDƏF AUDİTORİYA
+    ───────────────────────────────────────────── -->
+    <div class="section" id="auditoriya">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <h2>Hədəf Auditoriya</h2>
+      </div>
+
+      <p>
+        Lumi AI geniş istifadəçi qrupuna yönəlmişdir. Birincil hədəf — sistemdən birbaşa yararlanan uşaqlardır; lakin layihənin davamlılığı üçün müəllim, valideyn və təhsil qurumlarının da maraqları nəzərə alınmışdır.
+      </p>
+
+      <h3 class="sub">Birincil istifadəçilər: 5–8 yaşlı uşaqlar</h3>
+
+      <p>
+        Bu yaş qrupu alqoritmik düşüncə üçün ən həssas inkişaf dövrüdür. Uşaqlar artıq rəngli blokları tanıya, sıraya düzə və sadə ardıcıllıq qurabilərlər, lakin abstrakt sintaksis hələ onlar üçün əlçatmazdır. Lumi bu boşluğu fiziki-rəqəmsal körpü qurub doldurur.
+      </p>
+
+      <h3 class="sub">İkincil istifadəçilər: Müəllimlər və valideynlər</h3>
+
+      <p>
+        İbtidai sinif müəllimləri sistemin analitika paneli vasitəsilə hər uşağın irəliləyişini, tipik səhvlərini və güclü cəhətlərini izləyə bilər. Fərdi hesabatlar müəllimin diqqətini daha çox köməyə ehtiyacı olan uşaqlara yönəltməsinə imkan yaradır.
+      </p>
+      <p>
+        Valideynlər üçün isə Lumi ekran vaxtını məhdudlaşdırmaq istəyi ilə texnoloji savadlılıq tələbi arasındakı ziddiyyəti həll edir: uşaq texnologiya öyrənir, amma fiziki bloklar ilə.
+      </p>
+
+      <h3 class="sub">İnstitusional istifadəçilər: Məktəblər və STEM mərkəzləri</h3>
+
+      <p>
+        Robotik kursları üçün hazır, sürətlə qurula bilən platforma axtaran qurumlara Lumi uyğun bir həll təqdim edir. Açıq lisenziya (MIT) sayəsində qurum öz ehtiyaclarına görə sistemi uyğunlaşdıra bilər.
+      </p>
+
+      <h3 class="sub">Bazar həcmi</h3>
+      <div class="stats-row">
+        <div class="stat-box"><div class="sv">$3.9B</div><div class="sl">Qlobal uşaq EdTech bazarı (2027 proqnozu)</div></div>
+        <div class="stat-box"><div class="sv">%68</div><div class="sl">Valideynlər erkən kodlama təhsilinə hazırdır</div></div>
+        <div class="stat-box"><div class="sv">42</div><div class="sl">Ölkə robotik STEM-i milli kurikuluma daxil edib</div></div>
+      </div>
+    </div>
+
+    <hr class="section-div">
+
+    <!-- ─────────────────────────────────────────────
+         4. İCRA PLANI
+    ───────────────────────────────────────────── -->
+    <div class="section" id="icra">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <h2>İcra Planı</h2>
+      </div>
+
+      <p>
+        Layihənin icrası dörd ardıcıl mərhələdə planlaşdırılmışdır. Hər mərhələ əvvəlki mərhələnin nəticələrinə əsaslanır; bu yanaşma məhsulun real istifadəçi rəyi əsasında tədricən təkmilləşdirilməsinə imkan verir.
+      </p>
+
+      <div class="phases">
+        <div class="ph ph-1">
+          <div class="ph-label">Mərhələ 1 · 1–2 ay</div>
+          <h4>🔬 MVP Prototip</h4>
+          <ul>
+            <li>ESP32 robot arabasının yığılması</li>
+            <li>Rəng deteksiyasının kalibrasyonu</li>
+            <li>5 əsas oyun missiyasının hazırlanması</li>
+            <li>React dashboard-un tamamlanması</li>
+            <li>Vercel + Render deployment qurulması</li>
+          </ul>
+        </div>
+        <div class="ph ph-2">
+          <div class="ph-label">Mərhələ 2 · 3–4 ay</div>
+          <h4>🧪 Pilot Test</h4>
+          <ul>
+            <li>2–3 məktəbdə canlı pilot proqram</li>
+            <li>50+ uşaqla test sessiyaları</li>
+            <li>Müəllim geri bildirimi toplanması</li>
+            <li>AI tutor dialoglarının incələnməsi</li>
+            <li>UX problemlərinin müəyyənləşdirilməsi</li>
+          </ul>
+        </div>
+        <div class="ph ph-3">
+          <div class="ph-label">Mərhələ 3 · 5–7 ay</div>
+          <h4>📈 Ölçəklənmə</h4>
+          <ul>
+            <li>Azərbaycanca, İngiliscə, Rusca dəstək</li>
+            <li>Müəllim analitika panelinin inkişafı</li>
+            <li>Bulud sinxronizasiyası (uşaq profili)</li>
+            <li>10 məktəbə genişlənmə</li>
+          </ul>
+        </div>
+        <div class="ph ph-4">
+          <div class="ph-label">Mərhələ 4 · 8–12 ay</div>
+          <h4>🚀 Kommersiyalaşma</h4>
+          <ul>
+            <li>Məktəb lisenziya modelinin qurulması</li>
+            <li>Hardware kit satışının başlanması</li>
+            <li>Beynəlxalq bazarlara çıxış</li>
+            <li>Davamlı texniki dəstək xidməti</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 class="sub">Texniki stack</h3>
+
+      <table class="rtable">
+        <thead><tr><th>Qat</th><th>Texnologiya</th><th>Rol</th></tr></thead>
+        <tbody>
+          <tr><td>Backend</td><td>Python FastAPI + WebSocket</td><td>Real vaxt oyun vəziyyəti yayımı</td></tr>
+          <tr><td>Görmə sistemi</td><td>OpenCV (HSV analizi)</td><td>Blokların rəng aşkarlanması</td></tr>
+          <tr><td>Robot firmware</td><td>Arduino / ESP32</td><td>Encoder ilə dəqiq hərəkət idarəsi</td></tr>
+          <tr><td>AI tutor</td><td>Claude Haiku (Anthropic)</td><td>Uşaq dostu adaptiv dialoq</td></tr>
+          <tr><td>Frontend</td><td>React 19 + Vite</td><td>Canlı dashboard, animasiya, UI</td></tr>
+          <tr><td>Deployment</td><td>Vercel + Render</td><td>Frontend + backend bulud xidməti</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="section-div">
+
+    <!-- ─────────────────────────────────────────────
+         5. POTENSİAL TƏSİR
+    ───────────────────────────────────────────── -->
+    <div class="section" id="tesir">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <h2>Potensial Təsir</h2>
+      </div>
+
+      <p>
+        Lumi AI-nin düzgün tətbiqi halında bir neçə istiqamətdə ölçülə bilən təsir göstərməsi gözlənilir.
+      </p>
+
+      <h3 class="sub">Uşaqların inkişafına təsir</h3>
+
+      <p>
+        Sistemin əsas fərdi faydası alqoritmik düşüncənin erkən yaşda möhkəm bünövrə üzərindən mənimsənilməsidir. Ardıcıllıq, dövrə, sazlama — bu anlayışlar uşaq tərəfindən həm fiziki hərəkətin nəticəsi, həm də vizual animasiya kimi eyni anda qəbul edilir. Neyrokognitiv araşdırmalar göstərir ki, çoxkanallı öyrənmə (toxunma + görmə + hərəkət) anlayışların uzunmüddətli yaddaşda möhkəmlənməsini əhəmiyyətli dərəcədə gücləndirir.
+      </p>
+
+      <p>
+        AI tutorla dialoq prosesi ünsiyyət bacarıqlarına da müsbət töhfə verir: uşaq öz düşüncə prosesini sözlə ifadə etmək üçün stimullaşdırılır; bu isə həm dil inkişafına, həm də metakognitiv bacarıqlara — öz öyrənmə prosesini şüurlu izləmə qabiliyyətinə — birbaşa dəstəkdir.
+      </p>
+
+      <h3 class="sub">Sistem miqyasında təsir</h3>
+
+      <p>
+        Müəllim analitika paneli sayəsində sinif səviyyəsindəki müdaxilə daha dəqiq hala gəlir: müəllim hansı anlayışda çoxsaylı uşaqların çətinlik çəkdiyini avtomatik toplanmış məlumatlar əsasında müəyyən edə, müvafiq əlavə izahat verə bilər.
+      </p>
+
+      <p>
+        Uzunmüddətli perspektivdə sistem Azərbaycanda STEM savadlılığının ibtidai məktəb səviyyəsindən başlayaraq sistemli şəkildə inkişafına töhfə verə bilər. Bu, ölkənin rəqəmsal iqtisadiyyata keçidi kontekstində xüsusi əhəmiyyət kəsb edir.
+      </p>
+
+      <h3 class="sub">Əlçatanlıq və bərabərlik</h3>
+
+      <p>
+        Sistemin açıq mənbə (MIT lisenziyası) olması onu kommersiya alternativlərindən əsaslı şəkildə fərqləndirir. İstənilən məktəb və ya fərd sistemi öz serverində qura bilər. Əlavə olaraq, Vercel üzərindəki veb demo hardware olmadan işlədiyindən internet bağlantısı olan hər bir uşağa sistemə giriş imkanı tanınır.
+      </p>
+
+      <div class="quote">
+        <p>Uşaqlar proqramlaşdırmanı öyrənmir — onlar problemi həll etməyi öyrənirlər. Lumi sadəcə bu prosesi əllə tutula bilən, görünən hala gətirir.</p>
+        <cite>— Layihə vizyonu</cite>
+      </div>
+    </div>
+
+    <hr class="section-div">
+
+    <!-- ─────────────────────────────────────────────
+         NƏTİCƏ
+    ───────────────────────────────────────────── -->
+    <div class="section" id="netice">
+      <div class="section-header">
+        <div class="section-num">6</div>
+        <h2>Nəticə</h2>
+      </div>
+
+      <p>
+        Lumi AI, proqramlaşdırma təhsilindəki mücərrədlik problemini kök səviyyəsindən həll etmək üçün hazırlanmış inteqrasiya olunmuş texnoloji-pedaqoji sistemdir. Layihənin əsas yeniliyi texniki komponentlərinin ayrı-ayrılıqda deyil, vahid, uşaq dostu bir təcrübə kimi birləşdirilməsindədir: fiziki blok dili + kompüter görməsi + real robot + adaptiv AI tutor.
+      </p>
+
+      <p>
+        Cari prototip vəziyyəti aşağıdakıları əhatə edir: tam işlək ESP32 robot firmware, OpenCV əsaslı rəng aşkarlama sistemi, React dashboard, BFS yol planlama alqoritmi, Claude ilə inteqrasiya olunmuş AI tutor, Vercel və Render üzərindəki produksiya deployment-i.
+      </p>
+
+      <p>
+        Növbəti addım pilot testlərdir — real sinif mühitindən alınan geri bildirim sistemin pedaqoji effektivliyini ölçmək üçün vacibdir. Pilot nəticələri əsasında icra planının ikinci mərhələsinə keçilə bilər.
+      </p>
+
+      <div class="conclusion">
+        <h2>Açar nəticələr</h2>
+        <p>Lumi AI proqramlaşdırma öyrənməsini ekrandan fiziki oyuna köçürür — 5–8 yaş qrupu üçün ən effektiv öyrənmə kanalı.</p>
+        <p>Sistem tam işlək prototip olaraq Vercel üzərindən istifadəyə açıqdır; fiziki robot isə WiFi vasitəsilə qoşularaq real vaxtda proqramları icra edir.</p>
+        <p>Açıq lisenziya, çoxdilli dəstək planı və analitika alətləri layihəni genişmiqyaslı tətbiq üçün hazır edir.</p>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <div class="footer">
+    <span>Lumi AI — Layihə Hesabatı · 2026</span>
+    <span>Davud Əli · davudali2022@gmail.com</span>
+    <span>MIT Lisenziyası · Açıq Mənbə</span>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>
