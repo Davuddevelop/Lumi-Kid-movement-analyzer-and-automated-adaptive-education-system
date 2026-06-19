@@ -220,7 +220,15 @@ function App() {
 
   const handleWsMessage = useCallback((newState) => {
     if (newState.robot_status) setLiveRobotStatus(newState.robot_status);
-    setGameState(prev => ({ ...prev, ...newState }));
+    setGameState(prev => ({
+      ...prev,
+      ...newState,
+      // If server omits the question key (old server / partial broadcast),
+      // treat it as null so the overlay never gets stuck on screen.
+      question: Object.prototype.hasOwnProperty.call(newState, 'question')
+        ? newState.question
+        : null,
+    }));
 
     if (
       newState.feedback &&

@@ -108,7 +108,7 @@ class RobotState:
             "stars_total": self.stars_total,
             "achievement": self.achievement,
         }
-        # Always include question key so frontend clears it when null
+        # Always include question key — None tells the client to clear the overlay
         data["question"] = question_system.get_current_question_data()
         # Include live robot status so dashboard can show connection badge
         data["robot_status"] = {
