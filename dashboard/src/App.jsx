@@ -29,10 +29,10 @@ if (API_BASE !== 'http://localhost:8000' || !localStorage.getItem('lumi_api_url'
 
 // ─── Command display map ───────────────────────────────────────────────────────
 const CMD_CONFIG = {
-  forward:    { emoji: '🟢', label: '▲' },
-  turn_right: { emoji: '🔵', label: '↻' },
-  turn_left:  { emoji: '🟡', label: '↺' },
-  loop:       { emoji: '🔴', label: '↩' },
+  forward:    { emoji: '⬆️', label: 'GO' },
+  turn_right: { emoji: '↩️', label: 'RIGHT' },
+  turn_left:  { emoji: '↪️', label: 'LEFT' },
+  loop:       { emoji: '🔁', label: 'LOOP' },
 };
 
 // ─── Client-side BFS (mirrors server lumi_ai.py) ─────────────────────────────
@@ -695,14 +695,15 @@ function App() {
               status={gameState.status}
             />
           </div>
-
-          {dailyChallenge && (
-            <DailyChallenge onPlay={handleDailyPlay} />
-          )}
         </div>
 
         {/* ── SIDEBAR (blocks + actions) ─────────────────────────────────── */}
         <div className="sidebar">
+
+          {/* Daily challenge banner at top of sidebar */}
+          {dailyChallenge && (
+            <DailyChallenge onPlay={handleDailyPlay} />
+          )}
 
           {/* ── BLOCK STRIP ──────────────────────────────────────────────── */}
           <div className="block-strip-wrapper">
@@ -724,7 +725,8 @@ function App() {
                       role="listitem"
                       aria-label={cmd.replace('_', ' ')}
                     >
-                      <span aria-hidden="true">{cfg.emoji}</span>
+                      <span className="block-tile-emoji" aria-hidden="true">{cfg.emoji}</span>
+                      <span className="block-tile-label">{cfg.label}</span>
                       <span className="block-tile-idx">{idx + 1}</span>
                     </div>
                   );
