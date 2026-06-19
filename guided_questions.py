@@ -514,6 +514,7 @@ class GuidedQuestionSystem:
 
         # Reset timer after processing
         self.question_start_time = None
+        self.current_question = None  # Clear so broadcast stops showing this question
 
         return {
             "success": True,
