@@ -1835,6 +1835,54 @@ body {
   box-shadow: 0 4px 0 #0d3ea0;
 }
 
+/* Scan button */
+.cam-actions {
+  padding: 10px 16px 4px;
+}
+.cam-btn-scan {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  color: white; border: none; border-radius: 14px;
+  font-family: 'Fredoka One', cursive; font-size: 1.05rem; cursor: pointer;
+  box-shadow: 0 4px 0 #3b0764;
+  transition: opacity 0.2s;
+}
+.cam-btn-scan:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Detected results area */
+.cam-results {
+  margin: 4px 16px 0;
+  padding: 12px;
+  background: var(--bg-deep);
+  border-radius: 14px;
+}
+.cam-results-title {
+  font-family: 'Fredoka One', cursive; font-size: 0.95rem;
+  color: var(--text-muted); margin: 0 0 8px;
+}
+.cam-results-error, .cam-results-empty {
+  font-size: 0.9rem; color: var(--text-muted); margin: 0; text-align: center; padding: 4px 0;
+}
+.cam-cmd-row {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;
+}
+.cam-cmd-badge {
+  padding: 5px 10px; border-radius: 10px;
+  font-family: 'Fredoka One', cursive; font-size: 0.88rem;
+  white-space: nowrap;
+}
+.cam-btn-apply {
+  width: 100%; padding: 11px;
+  background: linear-gradient(135deg, #4caf82, #2d7a57);
+  color: white; border: none; border-radius: 12px;
+  font-family: 'Fredoka One', cursive; font-size: 1rem; cursor: pointer;
+  box-shadow: 0 3px 0 #1a5c3a; transition: opacity 0.2s;
+}
+.cam-btn-apply:disabled { opacity: 0.6; cursor: not-allowed; }
+.cam-btn-applied {
+  background: linear-gradient(135deg, #2d7a57, #1a5c3a) !important;
+}
+
 /* Camera & Robot top strip buttons */
 .cam-top-btn, .robot-top-btn, .ai-panel-btn {
   background: none; border: 2px solid rgba(255, 255, 255, 0.4);

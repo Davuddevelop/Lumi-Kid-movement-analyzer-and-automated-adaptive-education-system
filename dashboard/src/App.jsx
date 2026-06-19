@@ -529,6 +529,7 @@ function App() {
       {showCamera && (
         <CameraView
           onClose={() => setShowCamera(false)}
+          apiBase={API_BASE}
         />
       )}
 
