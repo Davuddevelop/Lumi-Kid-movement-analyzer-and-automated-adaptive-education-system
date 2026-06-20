@@ -9,7 +9,7 @@ const CMD_COLORS = {
   loop_end:   { bg: '#9b59b6', label: '■ End' },
 };
 
-export default function CameraView({ onClose, apiBase = 'http://localhost:8000' }) {
+export default function CameraView({ onClose, onApplied, apiBase = 'http://localhost:8000' }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [status, setStatus] = useState('requesting');
@@ -89,12 +89,19 @@ export default function CameraView({ onClose, apiBase = 'http://localhost:8000' 
         body: JSON.stringify({ commands: detected.commands }),
       });
       setApplied(true);
+      // Close overlay and kick off game execution automatically
+      if (onApplied) {
+        setTimeout(() => {
+          onApplied(detected.commands);
+          onClose();
+        }, 500);
+      }
     } catch {
       // ignore
     } finally {
       setApplying(false);
     }
-  }, [apiBase, detected]);
+  }, [apiBase, detected, onApplied, onClose]);
 
   return (
     <div className="cam-overlay" onClick={status !== 'granted' ? onClose : undefined}>
@@ -193,7 +200,7 @@ export default function CameraView({ onClose, apiBase = 'http://localhost:8000' 
                       onClick={applyToGame}
                       disabled={applying || applied}
                     >
-                      {applied ? '✓ Applied to Game!' : applying ? 'Applying…' : '✓ Apply to Game'}
+                      {applied ? '✓ Starting game…' : applying ? 'Applying…' : '🚀 Apply & Run!'}
                     </button>
                   </>
                 )}

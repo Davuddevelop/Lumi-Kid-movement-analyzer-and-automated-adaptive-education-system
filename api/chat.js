@@ -35,6 +35,41 @@ Never discuss anything not appropriate for young children
 
 Respond in 1-3 short sentences. Use emojis. Be FUN and ENERGETIC! 🤖`;
 
+// Pre-scripted responses used when ANTHROPIC_API_KEY is not configured.
+// Keyword-matched so they feel contextual, not generic.
+const DEMO_REPLIES = [
+  { kw: ['loop','repeat'],               reply: "A loop makes Lumi repeat the same moves again and again — you only write it once! 🔁 Super smart thinking!" },
+  { kw: ['forward','green','go'],        reply: "The green block means GO — one step straight ahead! Line them up and Lumi zooms! 🟢🚀" },
+  { kw: ['turn','left','right','blue','yellow'], reply: "Turn blocks spin Lumi to face a new direction — then GO forward! Blue = right, Yellow = left! ↩️↪️" },
+  { kw: ['stuck','help','cant','can\'t','how'], reply: "You've got this! 💪 Think about which way Lumi is facing first — then pick the next block!" },
+  { kw: ['robot','move','work'],         reply: "Robots follow instructions one at a time — just like your blocks! Put them in order and Lumi goes! 🤖✨" },
+  { kw: ['star','win','goal','finish'],  reply: "Get Lumi to the ⭐ star to win! Plan your moves, press Play, and cheer! 🎉" },
+  { kw: ['code','program','coding'],     reply: "Coding is like giving a robot a recipe to follow! You write the steps, the robot moves — SO cool! 😄" },
+  { kw: ['lego','block','brick','scan'], reply: "Each LEGO brick is a command! Green = go forward, Blue = turn right, Yellow = turn left! 🧱🌈" },
+  { kw: ['lumi','name','who','you'],     reply: "I'm Lumi! ⭐ Your robot best friend here to help you learn coding and go on adventures together!" },
+  { kw: ['fun','cool','awesome','wow'],  reply: "I KNOW, right?! Coding is SO amazing — and YOU are basically a robot wizard! 🧙‍♂️🤖" },
+  { kw: ['hard','difficult','wrong'],    reply: "Every great coder gets stuck! Take a deep breath, try one block at a time — you CAN do it! 💪" },
+  { kw: ['why','what','how'],            reply: "Great question! 🤔 Robots need super clear instructions — they can't guess! That's why the order of blocks matters!" },
+];
+
+const GENERIC_REPLIES = [
+  "Hi there! I'm Lumi! 🤖 Ask me anything about the game or robots!",
+  "You're doing amazing! 🌟 Keep building those blocks and Lumi will go anywhere!",
+  "Robots and coding are SO fun — and you're learning both at the same time! ✨",
+  "Every move you make teaches Lumi something new! Keep going! 🚀",
+  "What would you like to know? I'm here to help! 😊",
+];
+
+function demoReply(messages) {
+  const lastUser = [...messages].reverse().find(m => m.role === 'user');
+  const text = (lastUser?.content || '').toLowerCase();
+  for (const { kw, reply } of DEMO_REPLIES) {
+    if (kw.some(k => text.includes(k))) return { reply, emotion: 'happy' };
+  }
+  const r = GENERIC_REPLIES[Math.floor(Date.now() / 1000) % GENERIC_REPLIES.length];
+  return { reply: r, emotion: 'happy' };
+}
+
 function detectEmotion(text) {
   const t = text.toLowerCase();
   if (/wow|amazing|you did it|yes!|🎉|⭐|great job/.test(t)) return 'excited';
@@ -52,15 +87,13 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST')
     return res.status(405).json({ error: 'Method not allowed' });
 
+  const { messages = [], game_context = null } = req.body || {};
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return res.status(200).json({
-      reply: "I'm Lumi! 🤖 Ask me anything! (AI key not configured yet)",
-      emotion: 'happy',
-    });
+    // No API key — use keyword-matched pre-scripted responses so demo still looks great
+    return res.status(200).json(demoReply(messages));
   }
-
-  const { messages = [], game_context = null } = req.body || {};
 
   // Build game context string
   let ctxStr = 'No game data yet.';
@@ -112,6 +145,8 @@ module.exports = async function handler(req, res) {
     return res.json({ reply, emotion: detectEmotion(reply) });
   } catch (e) {
     console.error('[chat] error', e.message);
-    return res.json({ reply: 'My circuits buzzed! Try again! ⚡', emotion: 'happy' });
+    // Fall back to scripted reply so demo never shows an error
+    return res.json(demoReply(messages));
   }
 };
+

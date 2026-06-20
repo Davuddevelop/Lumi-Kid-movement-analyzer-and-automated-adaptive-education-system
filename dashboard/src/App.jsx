@@ -405,6 +405,17 @@ function App() {
 
   const handleHint = () => apiPost('/api/hint');
 
+  // Camera "Apply & Run" — sets commands then immediately animates
+  const handleCameraApplied = useCallback(async (cmds) => {
+    if (!cmds?.length || isRunning || gameState.status === 'executing') return;
+    const snap = { ...gameState, commands: cmds };
+    setGameState(prev => ({ ...prev, commands: cmds }));
+    await new Promise(r => setTimeout(r, 150));
+    setIsRunning(true);
+    const planned = clientBfsPlan(snap) ?? cmds;
+    await runClientExecution(planned.length ? planned : cmds, snap);
+  }, [gameState, isRunning, runClientExecution]);
+
   const handleAnswer = (answerId) => {
     apiPost('/api/question/answer', { answer_id: answerId });
     setGameState(prev => ({ ...prev, question: null }));
@@ -579,6 +590,7 @@ function App() {
       {showCamera && (
         <CameraView
           onClose={() => setShowCamera(false)}
+          onApplied={handleCameraApplied}
           apiBase={API_BASE}
         />
       )}
@@ -634,7 +646,7 @@ function App() {
 
         {/* Camera button */}
         <button
-          className={`cam-top-btn${cameraGranted ? ' cam-active' : ''}`}
+          className={`cam-top-btn${cameraGranted ? ' cam-active' : ''}${!gameState.commands.length && !demoMode ? ' cam-pulse' : ''}`}
           onClick={() => setShowCamera(true)}
           aria-label="Open camera scanner"
           title="Camera Scanner"
@@ -726,6 +738,14 @@ function App() {
           />
         </div>
       </div>
+
+      {/* ── DEMO BANNER ────────────────────────────────────────────────── */}
+      {demoMode && (
+        <div className="demo-banner">
+          🎬 PRESENTATION MODE — Press ▶ to run the same demo every time
+          <button className="demo-banner-exit" onClick={() => { setDemoMode(false); demoModeRef.current = false; }}>✕ Exit</button>
+        </div>
+      )}
 
       {/* ── CONTENT AREA (2-col on desktop) ───────────────────────────── */}
       <div className="content-area">

@@ -62,13 +62,13 @@ const GridBoard = ({
 
   const { width, height } = grid_size;
 
-  // Robot face based on status
+  // Robot face based on status — matches the physical 4-wheeled rover
   const robotFace = {
-    success:   '🤩',
-    error:     '😵',
-    fail:      '😵',
-    executing: '🤖',
-  }[status] ?? '🤖';
+    success:   '🏆',
+    error:     '💥',
+    fail:      '💥',
+    executing: '🚗',
+  }[status] ?? '🚗';
 
   const robotColor = {
     success:   '#4caf82',
