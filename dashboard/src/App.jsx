@@ -229,13 +229,8 @@ function App() {
   const [showLumiChat, setShowLumiChat] = useState(false);
   const [showDailyChallenge, setShowDailyChallenge] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
-
-  const activateDemo = useCallback(async () => {
-    // Push fixed demo state to server so all clients + robot see same thing
-    await apiPost('/api/update', { commands: DEMO_COMMANDS });
-    setGameState(prev => ({ ...prev, ...DEMO_STATE }));
-    setDemoMode(true);
-  }, [apiPost]);
+  // Ref so WS handler can read demoMode without stale closure
+  const demoModeRef = useRef(false);
 
   // ── TTS ────────────────────────────────────────────────────────────────────
   const speak = useCallback((text) => {
@@ -253,6 +248,8 @@ function App() {
 
   const handleWsMessage = useCallback((newState) => {
     if (newState.robot_status) setLiveRobotStatus(newState.robot_status);
+    // In demo mode, ignore server game-state so our fixed state isn't overwritten
+    if (demoModeRef.current) return;
     setGameState(prev => ({
       ...prev,
       ...newState,
@@ -291,6 +288,15 @@ function App() {
       console.error(`[API] ${path}`, e);
     }
   }, []);
+
+  // ── Presentation Demo Mode ─────────────────────────────────────────────────
+  const activateDemo = useCallback(async () => {
+    demoModeRef.current = true;
+    setDemoMode(true);
+    setGameState({ ...DEMO_STATE });
+    // Best-effort: push to server so robot/other clients also see demo commands
+    apiPost('/api/update', { commands: DEMO_COMMANDS }).catch(() => {});
+  }, [apiPost]);
 
   // ── Client-side execution fallback (works without a server) ──────────────
   const runClientExecution = useCallback(async (commands, snap) => {
@@ -333,16 +339,18 @@ function App() {
   const handleRun = async () => {
     if (gameState.status === 'executing' || isRunning) return;
 
-    // In demo mode: always reset to the exact same state before running
+    // Demo mode: always reset to the fixed state and run client-side
     if (demoMode) {
-      setGameState(prev => ({ ...prev, ...DEMO_STATE }));
-      await apiPost('/api/update', { commands: DEMO_COMMANDS });
-      // Small delay so the grid resets visually before executing
-      await new Promise(r => setTimeout(r, 300));
+      const snap = { ...DEMO_STATE };
+      setGameState({ ...snap });
+      await new Promise(r => setTimeout(r, 150));
+      setIsRunning(true);
+      await runClientExecution(DEMO_COMMANDS, snap);
+      return;
     }
 
     setIsRunning(true);
-    const snap = demoMode ? { ...DEMO_STATE } : gameState;
+    const snap = gameState;
 
     // Try server first (1.5 s timeout); fall back to client-side BFS + animation.
     try {
