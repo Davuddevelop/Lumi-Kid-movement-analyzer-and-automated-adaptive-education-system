@@ -1952,6 +1952,16 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 .cam-active { color: #4caf82 !important; border-color: #4caf82 !important; background: rgba(76,175,130,0.2) !important; }
+.demo-btn--active {
+  color: #ff9f43 !important;
+  border-color: #ff9f43 !important;
+  background: rgba(255,159,67,0.2) !important;
+  animation: demoPulse 1.5s ease-in-out infinite;
+}
+@keyframes demoPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,159,67,0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(255,159,67,0); }
+}
 .ai-panel-btn--active { color: #FFD43B !important; border-color: rgba(255,212,59,0.6) !important; background: rgba(255,212,59,0.15) !important; }
 .robot-connected { color: #4caf82 !important; border-color: #4caf82 !important; }
 

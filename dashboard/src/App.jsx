@@ -74,6 +74,30 @@ function getLumiEmotion(status, sentiment, hasQuestion) {
 }
 
 // ─── Initial game state ────────────────────────────────────────────────────────
+// ─── Presentation demo — fixed state shown every time ─────────────────────────
+const DEMO_COMMANDS = ['forward', 'forward', 'turn_right', 'forward', 'turn_left', 'forward', 'forward'];
+const DEMO_STATE = {
+  commands: DEMO_COMMANDS,
+  status: 'idle',
+  feedback: 'Watch Lumi go! 🚀',
+  suggestion: null,
+  grid_size: { width: 6, height: 5 },
+  start_pos: { x: 0, y: 2 },
+  robot_pos: { x: 0, y: 2 },
+  robot_direction: 1,
+  goal: { x: 5, y: 2 },
+  obstacles: [{ x: 2, y: 1 }, { x: 2, y: 3 }],
+  path: [],
+  vitals: { joy: 95, focus: 90 },
+  sentiment: 'joy',
+  current_level_id: 1,
+  level_name: 'Demo Run',
+  xp: 120,
+  stars_total: 3,
+  question: null,
+  achievement: null,
+};
+
 const INITIAL_STATE = {
   commands: [],
   status: 'idle',
@@ -204,6 +228,14 @@ function App() {
   const [showFocus, setShowFocus] = useState(false);
   const [showLumiChat, setShowLumiChat] = useState(false);
   const [showDailyChallenge, setShowDailyChallenge] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
+
+  const activateDemo = useCallback(async () => {
+    // Push fixed demo state to server so all clients + robot see same thing
+    await apiPost('/api/update', { commands: DEMO_COMMANDS });
+    setGameState(prev => ({ ...prev, ...DEMO_STATE }));
+    setDemoMode(true);
+  }, [apiPost]);
 
   // ── TTS ────────────────────────────────────────────────────────────────────
   const speak = useCallback((text) => {
@@ -300,8 +332,17 @@ function App() {
   // ── Game actions ───────────────────────────────────────────────────────────
   const handleRun = async () => {
     if (gameState.status === 'executing' || isRunning) return;
+
+    // In demo mode: always reset to the exact same state before running
+    if (demoMode) {
+      setGameState(prev => ({ ...prev, ...DEMO_STATE }));
+      await apiPost('/api/update', { commands: DEMO_COMMANDS });
+      // Small delay so the grid resets visually before executing
+      await new Promise(r => setTimeout(r, 300));
+    }
+
     setIsRunning(true);
-    const snap = gameState;
+    const snap = demoMode ? { ...DEMO_STATE } : gameState;
 
     // Try server first (1.5 s timeout); fall back to client-side BFS + animation.
     try {
@@ -635,6 +676,17 @@ function App() {
           title="Focus Mode"
         >
           🎯
+        </button>
+
+        {/* Presentation demo mode */}
+        <button
+          className={`map-btn demo-btn${demoMode ? ' demo-btn--active' : ''}`}
+          onClick={activateDemo}
+          aria-label="Presentation demo mode"
+          title="Presentation Mode — same every time"
+        >
+          🎬
+          <span>{demoMode ? 'DEMO ON' : 'DEMO'}</span>
         </button>
 
         {/* Map nav — opens WorldMap */}
