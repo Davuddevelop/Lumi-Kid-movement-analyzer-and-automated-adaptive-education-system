@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Map, Mic, MicOff, RefreshCw, Camera, Wifi } from 'lucide-react';
+import { Map, RefreshCw, Camera, Wifi } from 'lucide-react';
 import GridBoard        from './components/GridBoard';
 import LevelSelect      from './components/LevelSelect';
 import LumiAvatar       from './components/LumiAvatar';
@@ -29,11 +29,8 @@ if (API_BASE !== 'http://localhost:8000' || !localStorage.getItem('lumi_api_url'
 
 // ─── Command display map ───────────────────────────────────────────────────────
 const CMD_CONFIG = {
-  forward:    { emoji: '⬆️', label: 'FORWARD' },
-  backward:   { emoji: '⬇️', label: 'BACK' },
-  turn_right: { emoji: '↩️', label: 'RIGHT' },
-  turn_left:  { emoji: '↪️', label: 'LEFT' },
-  loop:       { emoji: '🔁', label: 'LOOP' },
+  forward:  { emoji: '⬆️', label: 'FORWARD' },
+  backward: { emoji: '⬇️', label: 'BACK' },
 };
 
 // ─── Client-side BFS (mirrors server lumi_ai.py) ─────────────────────────────
@@ -812,12 +809,12 @@ function App() {
 
           {/* ── BLOCK STRIP ──────────────────────────────────────────────── */}
           <div className="block-strip-wrapper">
-            <div className="block-strip-label">MOVES</div>
-            <div className="block-strip" role="list" aria-label="Detected commands">
+            <div className="block-strip-label">GENERATED CODE</div>
+            <div className="block-strip" role="list" aria-label="Generated commands">
               {gameState.commands.length === 0 ? (
                 <div className="block-strip-empty">
-                  <span>🔍</span>
-                  <span>Show your LEGO blocks!</span>
+                  <span>📷</span>
+                  <span>Scan your blocks above!</span>
                 </div>
               ) : (
                 gameState.commands.map((cmd, idx) => {
@@ -842,24 +839,10 @@ function App() {
 
           {/* ── ACTION BAR ───────────────────────────────────────────────── */}
           <div className="action-bar">
-            {/* Top row: secondary controls */}
             <div className="action-secondary-row">
               <button className="hint-btn" onClick={handleHint} aria-label="Hint" title="Hint">💡</button>
-              {gameState.current_level_id === 1 && (
-                <button
-                  className={`auto-solve-btn${isAutoSolving ? ' auto-solve-btn--solving' : ''}`}
-                  onClick={handleAutoSolve}
-                  disabled={isAutoSolving || gameState.status === 'executing'}
-                >
-                  {isAutoSolving ? <><RefreshCw className="animate-spin" size={16} /> Solving…</> : <>⚡ SOLVE IT!</>}
-                </button>
-              )}
-              <button className={`mic-btn${isListening ? ' listening' : ''}`} onClick={startListening} aria-label="Voice">
-                {isListening ? <MicOff size={22} /> : <Mic size={22} />}
-              </button>
               <button className="reset-btn" onClick={handleReset} aria-label="Reset">🔄</button>
             </div>
-            {/* Bottom row: main run button — always full width */}
             <button
               className="run-button"
               onClick={handleRun}
