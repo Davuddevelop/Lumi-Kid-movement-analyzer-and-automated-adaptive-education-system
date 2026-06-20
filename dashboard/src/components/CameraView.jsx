@@ -18,38 +18,71 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
 
+  // cam-feed-container is always rendered (display:none until granted) so
+  // videoRef.current is non-null when getUserMedia resolves.
+  // srcObject is set BEFORE setStatus('granted') — stream attached first, UI updates second.
   useEffect(() => {
     let stream = null;
-    // Simple constraints — iOS rejects overly strict ones
+    let mounted = true;
+
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
       .then((s) => {
         stream = s;
         const video = videoRef.current;
-        if (video) {
-          video.srcObject = s;
-          // iOS requires explicit .play() after srcObject assignment
-          video.play().catch(() => {});
-        }
-        setStatus('granted');
+        if (!video || !mounted) return Promise.resolve();
+        video.srcObject = s;
+        // iOS requires explicit .play() after srcObject; resolve even on autoplay rejection
+        return video.play().catch(() => {});
       })
-      .catch(() => setStatus('denied'));
-    return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
+      .then(() => {
+        if (mounted) setStatus('granted');
+      })
+      .catch(() => {
+        if (mounted) setStatus('denied');
+      });
+
+    return () => {
+      mounted = false;
+      if (stream) stream.getTracks().forEach(t => t.stop());
+    };
   }, []);
 
+  // Primary readiness signal: loadedmetadata fires when width/height are known
   const handleLoadedMetadata = useCallback(() => {
     const video = videoRef.current;
     if (video && video.videoWidth > 0) {
-      // iOS: dimensions now available, ensure playback started
       video.play().catch(() => {});
       setVideoReady(true);
     }
   }, []);
 
+  // Fallback: on some iOS builds loadedmetadata fires before videoWidth is populated;
+  // canplay fires later when the first frame is truly available
+  const handleCanPlay = useCallback(() => {
+    const video = videoRef.current;
+    if (video && !videoReady) {
+      video.play().catch(() => {});
+      setVideoReady(true);
+    }
+  }, [videoReady]);
+
+  // Last-resort: if both events never fire, unlock Scan after 3 s
+  useEffect(() => {
+    if (status !== 'granted' || videoReady) return;
+    const t = setTimeout(() => {
+      const video = videoRef.current;
+      if (video) {
+        video.play().catch(() => {});
+        setVideoReady(true);
+      }
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [status, videoReady]);
+
   const scan = useCallback(async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    // Guard: don't capture if video hasn't loaded dimensions yet (black frame on iOS)
     if (!video || !canvas || video.videoWidth === 0) {
       setDetected({ commands: [], blocks: [], error: 'Camera not ready — wait a moment and try again' });
       return;
@@ -88,7 +121,6 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
         body: JSON.stringify({ commands: detected.commands }),
       });
       setApplied(true);
-      // Close overlay and kick off game execution automatically
       if (onApplied) {
         setTimeout(() => {
           onApplied(detected.commands);
@@ -130,85 +162,89 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
           </div>
         )}
 
-        {status === 'granted' && (
-          <div className="cam-feed-container">
-            <div className="cam-feed-header">
-              <span className="cam-feed-title">📷 LEGO Block Scanner</span>
-              <button className="cam-close-btn" onClick={onClose}>✕</button>
-            </div>
+        {/* Always rendered (display:none when not granted) so videoRef is valid
+            when getUserMedia resolves — this was the root cause of the black screen */}
+        <div
+          className="cam-feed-container"
+          style={{ display: status === 'granted' ? 'flex' : 'none' }}
+        >
+          <div className="cam-feed-header">
+            <span className="cam-feed-title">📷 LEGO Block Scanner</span>
+            <button className="cam-close-btn" onClick={onClose}>✕</button>
+          </div>
 
-            <div className="cam-video-wrapper">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="cam-video"
-                onLoadedMetadata={handleLoadedMetadata}
-              />
-              <canvas ref={canvasRef} style={{ display: 'none' }} />
-              <div className="cam-corner cam-corner-tl" />
-              <div className="cam-corner cam-corner-tr" />
-              <div className="cam-corner cam-corner-bl" />
-              <div className="cam-corner cam-corner-br" />
-              {scanning && <div className="cam-scan-line" />}
-              {!videoReady && (
-                <div className="cam-video-loading">⏳ Starting camera…</div>
+          <div className="cam-video-wrapper">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="cam-video"
+              onLoadedMetadata={handleLoadedMetadata}
+              onCanPlay={handleCanPlay}
+            />
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+            <div className="cam-corner cam-corner-tl" />
+            <div className="cam-corner cam-corner-tr" />
+            <div className="cam-corner cam-corner-bl" />
+            <div className="cam-corner cam-corner-br" />
+            {scanning && <div className="cam-scan-line" />}
+            {!videoReady && (
+              <div className="cam-video-loading">⏳ Starting camera…</div>
+            )}
+          </div>
+
+          <p className="cam-hint">
+            📦 Arrange LEGO blocks in a horizontal row, then tap <strong>Scan</strong>
+          </p>
+
+          <div className="cam-actions">
+            <button className="cam-btn-scan" onClick={scan} disabled={scanning || !videoReady}>
+              {scanning ? '⏳ Scanning…' : !videoReady ? '⏳ Camera loading…' : '🔍 Scan Blocks'}
+            </button>
+          </div>
+
+          {detected && (
+            <div className="cam-results">
+              {detected.error ? (
+                <p className="cam-results-error">⚠️ {detected.error}</p>
+              ) : detected.commands.length === 0 ? (
+                <p className="cam-results-empty">
+                  No blocks detected — try better lighting or move blocks closer
+                </p>
+              ) : (
+                <>
+                  <p className="cam-results-title">
+                    Found {detected.commands.length} block{detected.commands.length !== 1 ? 's' : ''}:
+                  </p>
+                  <div className="cam-cmd-row">
+                    {detected.commands.map((cmd, i) => {
+                      const cfg = CMD_COLORS[cmd] || { bg: '#888', label: cmd };
+                      return (
+                        <span
+                          key={i}
+                          className="cam-cmd-badge"
+                          style={{ background: cfg.bg, color: cfg.color || '#fff' }}
+                        >
+                          {cfg.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <button
+                    className={`cam-btn-apply${applied ? ' cam-btn-applied' : ''}`}
+                    onClick={applyToGame}
+                    disabled={applying || applied}
+                  >
+                    {applied ? '✓ Starting game…' : applying ? 'Applying…' : '🚀 Apply & Run!'}
+                  </button>
+                </>
               )}
             </div>
+          )}
 
-            <p className="cam-hint">
-              📦 Arrange LEGO blocks in a horizontal row, then tap <strong>Scan</strong>
-            </p>
-
-            <div className="cam-actions">
-              <button className="cam-btn-scan" onClick={scan} disabled={scanning || !videoReady}>
-                {scanning ? '⏳ Scanning…' : !videoReady ? '⏳ Camera loading…' : '🔍 Scan Blocks'}
-              </button>
-            </div>
-
-            {detected && (
-              <div className="cam-results">
-                {detected.error ? (
-                  <p className="cam-results-error">⚠️ {detected.error}</p>
-                ) : detected.commands.length === 0 ? (
-                  <p className="cam-results-empty">
-                    No blocks detected — try better lighting or move blocks closer
-                  </p>
-                ) : (
-                  <>
-                    <p className="cam-results-title">
-                      Found {detected.commands.length} block{detected.commands.length !== 1 ? 's' : ''}:
-                    </p>
-                    <div className="cam-cmd-row">
-                      {detected.commands.map((cmd, i) => {
-                        const cfg = CMD_COLORS[cmd] || { bg: '#888', label: cmd };
-                        return (
-                          <span
-                            key={i}
-                            className="cam-cmd-badge"
-                            style={{ background: cfg.bg, color: cfg.color || '#fff' }}
-                          >
-                            {cfg.label}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    <button
-                      className={`cam-btn-apply${applied ? ' cam-btn-applied' : ''}`}
-                      onClick={applyToGame}
-                      disabled={applying || applied}
-                    >
-                      {applied ? '✓ Starting game…' : applying ? 'Applying…' : '🚀 Apply & Run!'}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
-            <button className="cam-btn-done" onClick={onClose}>Done</button>
-          </div>
-        )}
+          <button className="cam-btn-done" onClick={onClose}>Done</button>
+        </div>
       </div>
     </div>
   );
