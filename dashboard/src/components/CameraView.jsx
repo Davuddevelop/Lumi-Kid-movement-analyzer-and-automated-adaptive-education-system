@@ -1,12 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 const CMD_COLORS = {
-  forward:    { bg: '#4caf82', label: '▲ Forward' },
+  forward:    { bg: '#222222', label: '⬆ Forward' },
+  backward:   { bg: '#e05c5c', label: '⬇ Back' },
   turn_right: { bg: '#1a6cf0', label: '↻ Right' },
   turn_left:  { bg: '#f5c842', label: '↺ Left', color: '#333' },
-  loop:       { bg: '#e05c5c', label: '↩ Loop' },
-  loop_start: { bg: '#f5982e', label: '▶ Start' },
-  loop_end:   { bg: '#9b59b6', label: '■ End' },
+  loop:       { bg: '#9b59b6', label: '↩ Loop' },
 };
 
 export default function CameraView({ onClose, onApplied, apiBase = 'http://localhost:8000' }) {

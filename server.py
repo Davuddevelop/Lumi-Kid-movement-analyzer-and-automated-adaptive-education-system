@@ -198,8 +198,10 @@ async def execute_commands():
         elif cmd == 'turn_left':
             direction = (direction - 1) % 4
             state.robot_direction = direction
-        elif cmd == 'forward':
-            dx, dy = DIR_VECTORS[direction]
+        elif cmd in ('forward', 'backward'):
+            # backward = move in the opposite direction the robot is facing
+            bwd = (direction + 2) % 4 if cmd == 'backward' else direction
+            dx, dy = DIR_VECTORS[bwd]
             nx, ny = x + dx, y + dy
 
             # Bounds check

@@ -29,7 +29,8 @@ if (API_BASE !== 'http://localhost:8000' || !localStorage.getItem('lumi_api_url'
 
 // ─── Command display map ───────────────────────────────────────────────────────
 const CMD_CONFIG = {
-  forward:    { emoji: '⬆️', label: 'GO' },
+  forward:    { emoji: '⬆️', label: 'FORWARD' },
+  backward:   { emoji: '⬇️', label: 'BACK' },
   turn_right: { emoji: '↩️', label: 'RIGHT' },
   turn_left:  { emoji: '↪️', label: 'LEFT' },
   loop:       { emoji: '🔁', label: 'LOOP' },

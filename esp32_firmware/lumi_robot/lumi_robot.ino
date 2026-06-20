@@ -231,6 +231,37 @@ bool moveForward(int cells = 1) {
     return true;
 }
 
+bool moveBackward(int cells = 1) {
+    if (TEST_MODE) {
+        Serial.println("[TEST] backward");
+        setLEDs(CRGB::Red);
+        delay(700);
+        setLEDs(CRGB::Black);
+        return true;
+    }
+    long target = (long)cells * TICKS_PER_CELL;
+    encL = encR = 0;
+    setLEDs(CRGB::Red);
+    // Reverse both motors
+    motorLeft(-MOTOR_SPEED);
+    motorRight(-MOTOR_SPEED);
+
+    while (encL < target && encR < target) {
+        long diff = encL - encR;
+        if (diff > 5) {
+            motorLeft(-MOTOR_SPEED + 20);
+            motorRight(-MOTOR_SPEED);
+        } else if (diff < -5) {
+            motorLeft(-MOTOR_SPEED);
+            motorRight(-MOTOR_SPEED + 20);
+        }
+        delay(4);
+    }
+    motorStop();
+    delay(180);
+    return true;
+}
+
 void turnRight() {
     if (TEST_MODE) {
         Serial.println("[TEST] turn_right");
@@ -300,6 +331,8 @@ void executeSequence(JsonArray commands) {
 
         if (strcmp(cmd, "forward") == 0) {
             ok = moveForward(1);
+        } else if (strcmp(cmd, "backward") == 0) {
+            ok = moveBackward(1);
         } else if (strcmp(cmd, "turn_right") == 0) {
             turnRight();
         } else if (strcmp(cmd, "turn_left") == 0) {

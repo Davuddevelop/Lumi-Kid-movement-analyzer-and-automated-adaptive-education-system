@@ -495,10 +495,11 @@ body {
   75%     { transform: rotate(4deg) scale(1.05); }
 }
 .block-tile.executing-tile { animation: blockPulse 1s infinite; outline: 3px solid var(--secondary); outline-offset: 2px; }
-.block-tile-forward    { background: linear-gradient(135deg, #ffd166, #f59e0b); }
+.block-tile-forward    { background: linear-gradient(135deg, #3a3a3a, #111111); }
+.block-tile-backward   { background: linear-gradient(135deg, #ff6b6b, #dc2626); }
 .block-tile-turn_right { background: linear-gradient(135deg, #22c9d5, #0d9488); }
 .block-tile-turn_left  { background: linear-gradient(135deg, #4da6ff, #1a6cf0); }
-.block-tile-loop       { background: linear-gradient(135deg, #ff6b6b, #dc2626); }
+.block-tile-loop       { background: linear-gradient(135deg, #9b59b6, #6c3483); }
 .block-tile-emoji { font-size: 1.6rem; line-height: 1; }
 .block-tile-label {
   font-family: 'Fredoka One', cursive;

@@ -21,17 +21,26 @@ def send_to_server(commands):
     except requests.exceptions.RequestException as e:
         print(f"Server connection failed: {e}")
 
-# HSV color ranges for robust detection
-# Note: Red is split into two ranges because it wraps around the HSV hue circle (0-180)
-# These ranges can be fine-tuned based on your exact lighting and camera
+# HSV color ranges — two block types only:
+#
+#   BLACK block → forward command
+#     Black has no hue. We detect it by low Value (darkness) + low Saturation.
+#     TIP: place blocks on WHITE paper for maximum contrast.
+#
+#   RED block → backward command
+#     Red wraps around the HSV hue wheel so two ranges are needed.
+#
+# Adjust BLACK_MAX_V if your lighting is dim (raise it) or very bright (lower it).
+BLACK_MAX_V  = 60   # pixels darker than this are "black"
+BLACK_MAX_S  = 80   # keep low to exclude coloured-but-dark regions (shadows)
+
 HSV_BOUNDARIES = {
-    'green':  (np.array([35, 100, 100]), np.array([85, 255, 255])),
-    'blue':   (np.array([90, 100, 100]), np.array([130, 255, 255])),
-    'yellow': (np.array([20, 100, 100]), np.array([35, 255, 255])),
-    'red1':   (np.array([0, 100, 100]),  np.array([10, 255, 255])),
-    'red2':   (np.array([160, 100, 100]), np.array([180, 255, 255])),
-    'orange': (np.array([10, 100, 100]), np.array([20, 255, 255])),   # loop_start
-    'purple': (np.array([130, 100, 100]), np.array([160, 255, 255]))  # loop_end
+    # Black: any hue, low saturation, very low value (darkness)
+    'black': (np.array([0,   0,   0]),   np.array([180, BLACK_MAX_S, BLACK_MAX_V])),
+    # Red lower range (hue 0-10)
+    'red1':  (np.array([0,   120, 70]),  np.array([10,  255, 255])),
+    # Red upper range (hue 165-180, wraps around)
+    'red2':  (np.array([165, 120, 70]),  np.array([180, 255, 255])),
 }
 
 def detect_and_sort_blocks(frame, min_area=500):
@@ -46,8 +55,13 @@ def detect_and_sort_blocks(frame, min_area=500):
     
     # Check for each color
     for color_key, (lower, upper) in HSV_BOUNDARIES.items():
+        # red1/red2 both map to 'red'; everything else uses its own name
         base_color = 'red' if color_key.startswith('red') else color_key
-        
+
+        # Skip colors we don't have a command for
+        if base_color not in COLOR_TO_COMMAND:
+            continue
+
         # Create a boolean pixel mask for the color
         mask = cv2.inRange(hsv, lower, upper)
         
@@ -121,12 +135,8 @@ def open_camera():
 def annotate_frame(frame, blocks, commands):
     """Draw bounding boxes + command labels onto the frame (in place)."""
     bgr_colors = {
-        'green': (0, 255, 0),
-        'blue': (255, 0, 0),
-        'yellow': (0, 255, 255),
-        'red': (0, 0, 255),
-        'orange': (0, 165, 255),
-        'purple': (128, 0, 128)
+        'black': (200, 200, 200),   # draw in light grey so it's visible on dark blocks
+        'red':   (0, 0, 255),
     }
     for block in blocks:
         x, y, w, h = block['bbox']
