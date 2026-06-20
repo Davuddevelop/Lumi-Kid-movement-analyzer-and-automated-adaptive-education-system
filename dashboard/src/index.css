@@ -1950,6 +1950,27 @@ body {
   background: linear-gradient(135deg, #2d7a57, #1a5c3a) !important;
 }
 
+/* ── Big scan button in sidebar ───────────────────────────────── */
+.scan-lego-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+  width: 100%; padding: 14px 0;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  color: #fff; font-family: 'Fredoka One', cursive;
+  font-size: 1.15rem; letter-spacing: 0.04em;
+  border: none; border-radius: 16px;
+  cursor: pointer; margin-bottom: 10px;
+  box-shadow: 0 4px 14px rgba(124,58,237,0.45);
+  transition: transform 0.15s, box-shadow 0.15s;
+  animation: scanBtnPulse 2.5s ease-in-out infinite;
+}
+.scan-lego-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,58,237,0.55); }
+.scan-lego-btn:active { transform: translateY(0); }
+@keyframes scanBtnPulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(124,58,237,0.45); }
+  50%       { box-shadow: 0 4px 22px rgba(124,58,237,0.75); }
+}
+
 /* Camera & Robot top strip buttons */
 .cam-top-btn, .robot-top-btn, .ai-panel-btn {
   background: none; border: 2px solid rgba(255, 255, 255, 0.4);

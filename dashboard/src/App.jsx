@@ -800,6 +800,16 @@ function App() {
             </div>
           )}
 
+          {/* ── SCAN BUTTON — main entry point, always visible in sidebar ── */}
+          <button
+            className="scan-lego-btn"
+            onClick={() => setShowCamera(true)}
+            aria-label="Open camera to scan LEGO blocks"
+          >
+            <Camera size={22} />
+            <span>SCAN LEGO BLOCKS</span>
+          </button>
+
           {/* ── BLOCK STRIP ──────────────────────────────────────────────── */}
           <div className="block-strip-wrapper">
             <div className="block-strip-label">MOVES</div>
