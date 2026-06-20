@@ -35,11 +35,11 @@ using namespace websockets;
 //   USE_TLS = false, SERVER_HOST = "192.168.1.xx", SERVER_PORT = 8000
 // CLOUD server (e.g. Render):
 //   USE_TLS = true,  SERVER_HOST = "lumi-server.onrender.com", SERVER_PORT = 443
-const char* WIFI_SSID     = "YOUR_WIFI_NAME";    // your WiFi SSID
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";// your WiFi password
-const bool  USE_TLS       = false;               // true for cloud (wss://)
-const char* SERVER_HOST   = "192.168.1.100";     // server IP or cloud hostname
-const int   SERVER_PORT   = 8000;                // 8000 local, 443 cloud
+const char* WIFI_SSID     = "YOUR_WIFI_NAME";    // ← change to your WiFi SSID
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";// ← change to your WiFi password
+const bool  USE_TLS       = true;                // true for Render cloud (wss://)
+const char* SERVER_HOST   = "lumi-kid-movement-analyzer-and-automated-k9zv.onrender.com";
+const int   SERVER_PORT   = 443;                 // 443 for cloud, 8000 for local
 const char* SERVER_PATH   = "/ws/robot";
 const char* ROBOT_ID      = "lumi-bot-1";        // unique per robot
 
@@ -47,7 +47,7 @@ const char* ROBOT_ID      = "lumi-bot-1";        // unique per robot
 // Movements become timed pauses + LED colors instead of waiting for encoder
 // ticks, so a bare ESP32 board can prove the full app↔robot pipeline.
 // Set to false once motors and encoders are wired up.
-const bool  TEST_MODE     = true;
+const bool  TEST_MODE     = false;               // false = real motors, true = LED-only demo
 
 // ── Motor pins (L298N / TB6612) ────────────────────────────────
 #define MOTOR_L_PWM   25

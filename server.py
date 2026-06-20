@@ -364,7 +364,14 @@ async def execute_program():
     state.robot_pos = state.start_pos.copy()
     await broadcast_state()
 
+    # Grid animation runs on the server (broadcasts WS state updates)
     asyncio.create_task(execute_commands())
+
+    # Physical robot executes the same commands simultaneously (if connected)
+    robots = robot_bridge.list_robots()
+    if robots:
+        asyncio.create_task(robot_bridge.execute_sequence(robots[0], list(state.commands)))
+
     return {"message": "Started"}
 
 @app.post("/api/demo")

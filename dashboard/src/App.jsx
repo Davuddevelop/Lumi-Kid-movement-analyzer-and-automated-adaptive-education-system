@@ -405,16 +405,26 @@ function App() {
 
   const handleHint = () => apiPost('/api/hint');
 
-  // Camera "Apply & Run" — sets commands then immediately animates
+  // Camera "Apply & Run" — push scanned commands to server then execute
+  // Server fires grid animation AND physical robot simultaneously.
+  // Falls back to client-side animation if server is unreachable.
   const handleCameraApplied = useCallback(async (cmds) => {
     if (!cmds?.length || isRunning || gameState.status === 'executing') return;
-    const snap = { ...gameState, commands: cmds };
     setGameState(prev => ({ ...prev, commands: cmds }));
-    await new Promise(r => setTimeout(r, 150));
     setIsRunning(true);
-    const planned = clientBfsPlan(snap) ?? cmds;
-    await runClientExecution(planned.length ? planned : cmds, snap);
-  }, [gameState, isRunning, runClientExecution]);
+    try {
+      await apiPost('/api/update', { commands: cmds });
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 1500);
+      await fetch(`${API_BASE}/api/execute`, { method: 'POST', signal: ctrl.signal });
+      clearTimeout(tid);
+      setTimeout(() => setIsRunning(false), 800);
+    } catch {
+      // Server offline — animate client-side so the demo still looks great
+      const snap = { ...gameState, commands: cmds };
+      await runClientExecution(cmds, snap);
+    }
+  }, [gameState, isRunning, apiPost, runClientExecution]);
 
   const handleAnswer = (answerId) => {
     apiPost('/api/question/answer', { answer_id: answerId });
