@@ -373,6 +373,17 @@ body {
 .grid-cell-obstacle {
   font-size: clamp(1.2rem, 3vw, 2rem);
   line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.45));
+}
+.grid-cell-deco {
+  position: absolute;
+  font-size: clamp(0.55rem, 1.4vw, 0.9rem);
+  bottom: 2px;
+  right: 3px;
+  opacity: 0.55;
+  pointer-events: none;
+  line-height: 1;
+  user-select: none;
 }
 .grid-cell-path {
   width: 36%;
