@@ -835,6 +835,24 @@ function App() {
                 })
               )}
             </div>
+
+            {/* Code view — shows the actual function calls sent to the robot */}
+            {gameState.commands.length > 0 && (
+              <div className="code-view" aria-label="Robot code">
+                <div className="code-view-header">robot_program.py</div>
+                <div className="code-view-body">
+                  {gameState.commands.map((cmd, idx) => (
+                    <div
+                      key={idx}
+                      className={`code-line${isExecutingOrRunning && idx === 0 ? ' code-line--active' : ''}`}
+                    >
+                      <span className="code-line-num">{idx + 1}</span>
+                      <span className="code-fn">{cmd === 'forward' ? 'move_forward()' : 'move_backward()'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── ACTION BAR ───────────────────────────────────────────────── */}

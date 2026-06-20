@@ -471,6 +471,39 @@ body {
   opacity: 0.6;
   animation: emptyPulse 3s infinite;
 }
+/* ── Code view (robot_program.py terminal) ───────────────────── */
+.code-view {
+  margin-top: 10px;
+  background: #0f1117;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  font-family: 'Courier New', monospace;
+}
+.code-view-header {
+  background: #1e2130;
+  color: #6b7280;
+  font-size: 0.72rem;
+  padding: 5px 12px;
+  letter-spacing: 0.05em;
+}
+.code-view-body { padding: 8px 0; }
+.code-line {
+  display: flex; align-items: center; gap: 12px;
+  padding: 3px 12px;
+  transition: background 0.2s;
+}
+.code-line--active {
+  background: rgba(124,58,237,0.25);
+}
+.code-line-num {
+  color: #4b5563; font-size: 0.75rem; min-width: 16px; text-align: right;
+}
+.code-fn {
+  color: #a5f3a0; font-size: 0.85rem;
+}
+.code-line--active .code-fn { color: #c4b5fd; }
+
 .block-tile {
   display: flex;
   flex-direction: column;
