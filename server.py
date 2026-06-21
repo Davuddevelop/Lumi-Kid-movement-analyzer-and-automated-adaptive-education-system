@@ -167,79 +167,35 @@ async def ai_refresh_feedback(trigger: str, has_question: bool = False):
 
 
 async def execute_commands():
-    """Execute commands step by step."""
-    global last_mistake_tag
+    """Execute commands freely — no collision, no edge, no goal checking.
+    The robot just moves and the grid shows each step."""
     x, y = state.start_pos["x"], state.start_pos["y"]
     direction = 1  # East
+    grid_w = state.grid_size["width"]
+    grid_h = state.grid_size["height"]
     state.path = [{"x": x, "y": y}]
     state.robot_pos = {"x": x, "y": y}
 
-    obstacles_set = {(o["x"], o["y"]) for o in state.obstacles}
-    grid_w = state.grid_size["width"]
-    grid_h = state.grid_size["height"]
-
-    # Unroll loops
-    unrolled = []
     for cmd in state.commands:
-        if cmd == 'loop' and unrolled:
-            unrolled.extend([unrolled[-1]] * 2)
-        else:
-            unrolled.append(cmd)
-
-    collision = False
-
-    for cmd in unrolled:
-        state.feedback = f"Executing: {cmd}"
+        state.feedback = f"Running: {cmd}"
         await broadcast_state()
 
-        if cmd == 'turn_right':
-            direction = (direction + 1) % 4
-            state.robot_direction = direction
-        elif cmd == 'turn_left':
-            direction = (direction - 1) % 4
-            state.robot_direction = direction
-        elif cmd in ('forward', 'backward'):
-            # backward = move in the opposite direction the robot is facing
-            bwd = (direction + 2) % 4 if cmd == 'backward' else direction
+        if cmd == 'forward':
+            dx, dy = DIR_VECTORS[direction]
+            nx, ny = x + dx, y + dy
+            # Clamp to grid so the robot stays visible on screen
+            nx = max(0, min(grid_w - 1, nx))
+            ny = max(0, min(grid_h - 1, ny))
+            x, y = nx, ny
+            state.robot_pos = {"x": x, "y": y}
+            state.path.append({"x": x, "y": y})
+
+        elif cmd == 'backward':
+            bwd = (direction + 2) % 4
             dx, dy = DIR_VECTORS[bwd]
             nx, ny = x + dx, y + dy
-
-            # Bounds check
-            if nx < 0 or nx >= grid_w or ny < 0 or ny >= grid_h:
-                last_mistake_tag = "fell_off_edge"
-                state.status = "error"
-                logger.log_attempt(state.commands, "fail", duration_seconds=len(unrolled)*0.5, mistake_tag="fell_off_edge")
-                try:
-                    save_mission_attempt(state.current_level_id, 'fail', state.commands, 0, 0, len(unrolled)*0.5)
-                except Exception:
-                    pass
-                # Ask a guided question
-                q = question_system.get_question_for_state("error", "fell_off_edge")
-                state.feedback = q.text if q else "Oops! You went off the edge!"
-                state.suggestion = q.hint if q else "Try turning before going forward."
-                await broadcast_state()
-                asyncio.create_task(ai_refresh_feedback(
-                    "Robot fell off the grid edge", has_question=q is not None))
-                return
-
-            # Obstacle check
-            if (nx, ny) in obstacles_set:
-                last_mistake_tag = "crashed_into_obstacle"
-                state.status = "error"
-                logger.log_attempt(state.commands, "fail", duration_seconds=len(unrolled)*0.5, mistake_tag="crashed_into_obstacle")
-                try:
-                    save_mission_attempt(state.current_level_id, 'fail', state.commands, 0, 0, len(unrolled)*0.5)
-                except Exception:
-                    pass
-                # Ask a guided question
-                q = question_system.get_question_for_state("error", "crashed_into_obstacle")
-                state.feedback = q.text if q else "Crash! You hit a rock!"
-                state.suggestion = q.hint if q else "Try turning earlier to avoid obstacles."
-                await broadcast_state()
-                asyncio.create_task(ai_refresh_feedback(
-                    "Robot crashed into a rock obstacle", has_question=q is not None))
-                return
-
+            nx = max(0, min(grid_w - 1, nx))
+            ny = max(0, min(grid_h - 1, ny))
             x, y = nx, ny
             state.robot_pos = {"x": x, "y": y}
             state.path.append({"x": x, "y": y})
@@ -247,82 +203,10 @@ async def execute_commands():
         await broadcast_state()
         await asyncio.sleep(0.5)
 
-    # Check goal
-    result = "fail"
-    duration_sec = len(unrolled) * 0.5
-
-    if x == state.goal["x"] and y == state.goal["y"]:
-        state.status = "success"
-        result = "success"
-        last_mistake_tag = None
-
-        # Record level completion in LevelSystem
-        completion_result = ValidationResult(
-            success=True,
-            reached_goal=True,
-            error=None,
-            path=[(p["x"], p["y"]) for p in state.path],
-            commands_used=len(unrolled),
-            efficiency_score=100.0,
-            stars=3,
-            feedback="Perfect!"
-        )
-        level_system.record_completion(state.current_level_id, completion_result)
-
-        # Award XP and persist to DB
-        try:
-            new_xp = add_xp(100)
-            state.xp = new_xp
-            state.stars_total = sum(level_system.progress.stars_earned.values())
-            save_mission_attempt(state.current_level_id, 'success', state.commands, 0, 3, duration_sec)
-            save_level_progress(state.current_level_id, 3, True, 1, state.commands)
-        except Exception:
-            pass
-
-        # Record mission completion for achievements
-        mission_badges = achievement_system.record_mission_complete()
-        # Use personality-based success message
-        success_msg = personality_system.get_response("success")
-        # Ask success question
-        q = question_system.get_question_for_state("success")
-        state.feedback = q.text if q else success_msg
-        state.suggestion = q.hint if q else "Try the next demo!"
-
-        # Pop first pending badge and expose it on state for the broadcast
-        pending = achievement_system.pop_pending_badge()
-        if pending:
-            state.achievement = pending
-            state.suggestion = f"{pending['icon']} NEW BADGE: {pending['name']}!"
-        else:
-            # Personalized AI celebration (badge text must not be overwritten)
-            asyncio.create_task(ai_refresh_feedback(
-                f"Child solved level {state.current_level_id} and reached the star!",
-                has_question=q is not None))
-
-        # Trigger robot celebration asynchronously (fire-and-forget)
-        asyncio.create_task(robot_bridge.celebrate("lumi-bot-1"))
-
-    else:
-        state.status = "error"
-        result = "partial"
-        last_mistake_tag = "missed_goal"
-        # Ask miss goal question
-        q = question_system.get_question_for_state("partial", "missed_goal")
-        state.feedback = q.text if q else "You didn't crash, but missed the goal!"
-        state.suggestion = q.hint if q else "Adjust your path to reach the flag."
-        asyncio.create_task(ai_refresh_feedback(
-            "Robot finished its moves safely but stopped short of the goal",
-            has_question=q is not None))
-        try:
-            save_mission_attempt(state.current_level_id, 'fail', state.commands, 0, 0, duration_sec)
-        except Exception:
-            pass
-
-    # Log to analytics
-    logger.log_attempt(state.commands, result, duration_seconds=duration_sec)
-
+    state.status = "success"
+    state.feedback = "Done! 🎉"
+    state.suggestion = ""
     await broadcast_state()
-    # Clear achievement after it has been broadcast once
     state.achievement = None
 
 @app.websocket("/ws")

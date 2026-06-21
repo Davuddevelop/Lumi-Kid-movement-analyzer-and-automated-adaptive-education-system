@@ -99,9 +99,6 @@ const GridBoard = ({
 
               return (
                 <div key={`${x}-${y}`} className="grid-cell">
-                  {isGoal && (
-                    <div className="grid-cell-goal" aria-label="Goal">⭐</div>
-                  )}
                   {isPath && (
                     <div
                       className="grid-cell-path"
