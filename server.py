@@ -47,10 +47,8 @@ app.add_middleware(
 
 # Block definitions (inline - no external import needed)
 BLOCKS = {
-    'forward': {'color': 'green', 'description': 'Move one step forward', 'icon': 'ArrowUp'},
-    'turn_right': {'color': 'blue', 'description': 'Rotate 90° clockwise', 'icon': 'CornerDownRight'},
-    'turn_left': {'color': 'yellow', 'description': 'Rotate 90° counter-clockwise', 'icon': 'CornerDownLeft'},
-    'loop': {'color': 'red', 'description': 'Repeat previous block 2x', 'icon': 'Repeat'},
+    'turn_right': {'color': 'black', 'description': 'Turn the robot 90° to the right', 'icon': 'RotateCw'},
+    'backward':   {'color': 'red',   'description': 'Move the robot one step backward', 'icon': 'ArrowDown'},
 }
 
 # Demo scenarios
@@ -199,6 +197,10 @@ async def execute_commands():
             x, y = nx, ny
             state.robot_pos = {"x": x, "y": y}
             state.path.append({"x": x, "y": y})
+
+        elif cmd == 'turn_right':
+            direction = (direction + 1) % 4
+            state.robot_direction = direction
 
         await broadcast_state()
         await asyncio.sleep(0.5)

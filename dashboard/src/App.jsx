@@ -29,8 +29,8 @@ if (API_BASE !== 'http://localhost:8000' || !localStorage.getItem('lumi_api_url'
 
 // ─── Command display map ───────────────────────────────────────────────────────
 const CMD_CONFIG = {
-  forward:  { emoji: '⬆️', label: 'FORWARD' },
-  backward: { emoji: '⬇️', label: 'BACK' },
+  turn_right: { emoji: '↪️', label: 'TURN RIGHT' },
+  backward:   { emoji: '⬇️', label: 'BACK' },
 };
 
 // ─── Client-side BFS (mirrors server lumi_ai.py) ─────────────────────────────
@@ -317,17 +317,17 @@ function App() {
       if (cmd === 'turn_right') d = (d + 1) % 4;
       else if (cmd === 'turn_left') d = ((d - 1) + 4) % 4;
       else if (cmd === 'forward') { x += _DX[d]; y += _DY[d]; }
+      else if (cmd === 'backward') { const bd = (d + 2) % 4; x += _DX[bd]; y += _DY[bd]; }
       const pos = { x, y };
       setGameState(prev => ({
         ...prev, robot_pos: pos, robot_direction: d,
         path: [...prev.path, pos], feedback: `Executing: ${cmd}`,
       }));
     }
-    const won = x === snap.goal.x && y === snap.goal.y;
     setGameState(prev => ({
       ...prev,
-      status: won ? 'success' : 'error',
-      feedback: won ? '🎉 Goal reached! Amazing!' : 'Not quite — try again!',
+      status: 'success',
+      feedback: '🎉 Done! Great job!',
     }));
     setIsRunning(false);
     setIsAutoSolving(false);
@@ -847,7 +847,7 @@ function App() {
                       className={`code-line${isExecutingOrRunning && idx === 0 ? ' code-line--active' : ''}`}
                     >
                       <span className="code-line-num">{idx + 1}</span>
-                      <span className="code-fn">{cmd === 'forward' ? 'move_forward()' : 'move_backward()'}</span>
+                      <span className="code-fn">{cmd === 'turn_right' ? 'turn_right()' : cmd === 'backward' ? 'move_backward()' : cmd === 'forward' ? 'move_forward()' : `${cmd}()`}</span>
                     </div>
                   ))}
                 </div>

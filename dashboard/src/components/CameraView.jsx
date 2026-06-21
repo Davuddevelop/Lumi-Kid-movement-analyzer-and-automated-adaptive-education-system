@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 const CMD_COLORS = {
-  forward:  { bg: '#222222', label: '⬆ Forward' },
-  backward: { bg: '#e05c5c', label: '⬇ Back' },
+  turn_right: { bg: '#222222', label: '↪ Turn Right' },
+  backward:   { bg: '#e05c5c', label: '⬇ Back' },
 };
 
 // ── Client-side LEGO block detector ────────────────────────────────────────
@@ -27,9 +27,9 @@ function rgbToHsv(r, g, b) {
 
 function classifyPixel(r, g, b) {
   const [h, s, v] = rgbToHsv(r, g, b);
-  // Black LEGO block: very dark, low saturation
-  if (v < 55 && s < 80) return 'forward';
-  // Red LEGO block: red hue (wraps at 0/360), saturated, not too dark
+  // Black LEGO block: very dark, low saturation → turn right
+  if (v < 55 && s < 80) return 'turn_right';
+  // Red LEGO block: red hue (wraps at 0/360), saturated, not too dark → backward
   if (s > 100 && v > 60 && (h < 15 || h > 160)) return 'backward';
   return null;
 }
@@ -83,7 +83,7 @@ function detectBlocksLocal(canvas) {
   // Convert column indices back to pixel x-coordinates for sorting
   return blocks.map(b => ({
     command: b.color,
-    color:   b.color === 'forward' ? 'black' : 'red',
+    color:   b.color === 'turn_right' ? 'black' : 'red',
     x:       ((b.start + b.end) / 2) * XCOL,
   }));
 }
