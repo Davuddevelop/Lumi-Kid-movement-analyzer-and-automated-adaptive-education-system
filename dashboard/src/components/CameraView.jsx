@@ -1,12 +1,93 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 const CMD_COLORS = {
-  forward:    { bg: '#222222', label: '⬆ Forward' },
-  backward:   { bg: '#e05c5c', label: '⬇ Back' },
-  turn_right: { bg: '#1a6cf0', label: '↻ Right' },
-  turn_left:  { bg: '#f5c842', label: '↺ Left', color: '#333' },
-  loop:       { bg: '#9b59b6', label: '↩ Loop' },
+  forward:  { bg: '#222222', label: '⬆ Forward' },
+  backward: { bg: '#e05c5c', label: '⬇ Back' },
 };
+
+// ── Client-side LEGO block detector ────────────────────────────────────────
+// Runs entirely on the iPad — no server round-trip for detection.
+// The server is only called when Apply & Run sends commands to the robot.
+
+function rgbToHsv(r, g, b) {
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn), d = max - min;
+  const v = max;
+  const s = max === 0 ? 0 : d / max;
+  let h = 0;
+  if (d > 0) {
+    if (max === rn)      h = (((gn - bn) / d) % 6) / 6;
+    else if (max === gn) h = ((bn - rn) / d + 2) / 6;
+    else                 h = ((rn - gn) / d + 4) / 6;
+    if (h < 0) h += 1;
+  }
+  // Return H in 0-360, S and V in 0-255 (matches OpenCV scale)
+  return [h * 360, s * 255, v * 255];
+}
+
+function classifyPixel(r, g, b) {
+  const [h, s, v] = rgbToHsv(r, g, b);
+  // Black LEGO block: very dark, low saturation
+  if (v < 55 && s < 80) return 'forward';
+  // Red LEGO block: red hue (wraps at 0/360), saturated, not too dark
+  if (s > 100 && v > 60 && (h < 15 || h > 160)) return 'backward';
+  return null;
+}
+
+function detectBlocksLocal(canvas) {
+  const ctx = canvas.getContext('2d');
+  const { width, height } = canvas;
+  const data = ctx.getImageData(0, 0, width, height).data;
+
+  // Only scan the central 70% of the image height — avoids table edges and top noise
+  const y0 = Math.floor(height * 0.15);
+  const y1 = Math.floor(height * 0.85);
+  const YSTEP = 4;  // vertical sample stride (pixels)
+  const XCOL  = 3;  // horizontal stride — one "column" per 3px
+
+  // Build a left-to-right color profile: what command does each x-column contain?
+  const colProfile = [];
+  for (let x = 0; x < width; x += XCOL) {
+    let fwd = 0, bwd = 0, tot = 0;
+    for (let y = y0; y < y1; y += YSTEP) {
+      const i = (y * width + x) * 4;
+      const cls = classifyPixel(data[i], data[i + 1], data[i + 2]);
+      if (cls === 'forward')  fwd++;
+      else if (cls === 'backward') bwd++;
+      tot++;
+    }
+    // A column "belongs" to a color if ≥25% of sampled pixels match
+    if      (bwd / tot > 0.25) colProfile.push('backward');
+    else if (fwd / tot > 0.25) colProfile.push('forward');
+    else                        colProfile.push(null);
+  }
+
+  // Group consecutive same-color columns → each group is one physical block.
+  // MIN_COLS prevents stud shadows and tiny noise from registering as blocks.
+  // ~6% of image width gives a good lower-bound for a real LEGO block.
+  const MIN_COLS = Math.max(10, Math.floor(width * 0.06 / XCOL));
+  const blocks = [];
+  let run = null;
+
+  colProfile.forEach((color, i) => {
+    if (color && color === run?.color) {
+      run.end = i;
+      run.count++;
+    } else {
+      if (run && run.count >= MIN_COLS) blocks.push(run);
+      run = color ? { color, start: i, end: i, count: 1 } : null;
+    }
+  });
+  if (run && run.count >= MIN_COLS) blocks.push(run);
+
+  // Convert column indices back to pixel x-coordinates for sorting
+  return blocks.map(b => ({
+    command: b.color,
+    color:   b.color === 'forward' ? 'black' : 'red',
+    x:       ((b.start + b.end) / 2) * XCOL,
+  }));
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 export default function CameraView({ onClose, onApplied, apiBase = 'http://localhost:8000' }) {
   const videoRef = useRef(null);
@@ -20,7 +101,6 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
 
   // cam-feed-container is always rendered (display:none until granted) so
   // videoRef.current is non-null when getUserMedia resolves.
-  // srcObject is set BEFORE setStatus('granted') — stream attached first, UI updates second.
   useEffect(() => {
     let stream = null;
     let mounted = true;
@@ -32,7 +112,6 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
         const video = videoRef.current;
         if (!video || !mounted) return Promise.resolve();
         video.srcObject = s;
-        // iOS requires explicit .play() after srcObject; resolve even on autoplay rejection
         return video.play().catch(() => {});
       })
       .then(() => {
@@ -48,7 +127,6 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
     };
   }, []);
 
-  // Primary readiness signal: loadedmetadata fires when width/height are known
   const handleLoadedMetadata = useCallback(() => {
     const video = videoRef.current;
     if (video && video.videoWidth > 0) {
@@ -57,8 +135,6 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
     }
   }, []);
 
-  // Fallback: on some iOS builds loadedmetadata fires before videoWidth is populated;
-  // canplay fires later when the first frame is truly available
   const handleCanPlay = useCallback(() => {
     const video = videoRef.current;
     if (video && !videoReady) {
@@ -67,20 +143,17 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
     }
   }, [videoReady]);
 
-  // Last-resort: if both events never fire, unlock Scan after 3 s
   useEffect(() => {
     if (status !== 'granted' || videoReady) return;
     const t = setTimeout(() => {
       const video = videoRef.current;
-      if (video) {
-        video.play().catch(() => {});
-        setVideoReady(true);
-      }
+      if (video) { video.play().catch(() => {}); setVideoReady(true); }
     }, 3000);
     return () => clearTimeout(t);
   }, [status, videoReady]);
 
-  const scan = useCallback(async () => {
+  // Detection runs locally on the iPad — instant, no server needed
+  const scan = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || video.videoWidth === 0) {
@@ -91,30 +164,21 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
     setApplied(false);
     setDetected(null);
 
-    canvas.width = video.videoWidth;
+    canvas.width  = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-    try {
-      const res = await fetch(`${apiBase}/api/vision/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageDataUrl }),
-      });
-      const data = await res.json();
-      setDetected(data);
-    } catch {
-      setDetected({ commands: [], blocks: [], error: 'Could not reach server' });
-    } finally {
-      setScanning(false);
-    }
-  }, [apiBase]);
+    const blocks   = detectBlocksLocal(canvas);
+    const commands = blocks.map(b => b.command);
+    setDetected({ commands, blocks });
+    setScanning(false);
+  }, []);
 
   const applyToGame = useCallback(async () => {
     if (!detected?.commands?.length) return;
     setApplying(true);
     try {
+      // Sync commands to server so the robot and grid know what to execute
       await fetch(`${apiBase}/api/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,7 +192,14 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
         }, 500);
       }
     } catch {
-      // ignore
+      // Server offline — still hand commands to the app so the grid animates
+      setApplied(true);
+      if (onApplied) {
+        setTimeout(() => {
+          onApplied(detected.commands);
+          onClose();
+        }, 500);
+      }
     } finally {
       setApplying(false);
     }
@@ -162,8 +233,7 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
           </div>
         )}
 
-        {/* Always rendered (display:none when not granted) so videoRef is valid
-            when getUserMedia resolves — this was the root cause of the black screen */}
+        {/* Always rendered so videoRef is valid when stream arrives */}
         <div
           className="cam-feed-container"
           style={{ display: status === 'granted' ? 'flex' : 'none' }}
@@ -195,7 +265,7 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
           </div>
 
           <p className="cam-hint">
-            📦 Arrange LEGO blocks in a horizontal row, then tap <strong>Scan</strong>
+            📦 Place blocks on <strong>white paper</strong>, then tap <strong>Scan</strong>
           </p>
 
           <div className="cam-actions">
@@ -210,7 +280,7 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
                 <p className="cam-results-error">⚠️ {detected.error}</p>
               ) : detected.commands.length === 0 ? (
                 <p className="cam-results-empty">
-                  No blocks detected — try better lighting or move blocks closer
+                  No blocks detected — place on white paper, ensure good lighting
                 </p>
               ) : (
                 <>
@@ -224,7 +294,7 @@ export default function CameraView({ onClose, onApplied, apiBase = 'http://local
                         <span
                           key={i}
                           className="cam-cmd-badge"
-                          style={{ background: cfg.bg, color: cfg.color || '#fff' }}
+                          style={{ background: cfg.bg, color: '#fff' }}
                         >
                           {cfg.label}
                         </span>
