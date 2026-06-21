@@ -31,8 +31,15 @@ def send_to_server(commands):
 #     Red wraps around the HSV hue wheel so two ranges are needed.
 #
 # Adjust BLACK_MAX_V if your lighting is dim (raise it) or very bright (lower it).
-BLACK_MAX_V  = 60   # pixels darker than this are "black"
+BLACK_MAX_V  = 55   # pixels darker than this are "black" (real black LEGO: V ≈ 10-40)
 BLACK_MAX_S  = 80   # keep low to exclude coloured-but-dark regions (shadows)
+
+# Minimum block size — filters out stud shadows, small components, and noise.
+# A real LEGO block viewed from ~25-40 cm on an iPad fills at least this many pixels.
+# Stud shadows and small objects are typically under 30×20 px.
+MIN_BLOCK_W  = 40   # minimum bounding-box width  (pixels)
+MIN_BLOCK_H  = 25   # minimum bounding-box height (pixels)
+MIN_BLOCK_AREA = 1500  # minimum contour area (pixels²) — overrides the min_area arg
 
 HSV_BOUNDARIES = {
     # Black: any hue, low saturation, very low value (darkness)
@@ -65,20 +72,27 @@ def detect_and_sort_blocks(frame, min_area=500):
         # Create a boolean pixel mask for the color
         mask = cv2.inRange(hsv, lower, upper)
         
-        # Morphological operations to clean up noisy pixel detections
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel) # Removes isolated pixels
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel) # Fills in small holes
+        # Morphological operations to clean up noisy pixel detections.
+        # CLOSE with a large kernel first: fills the gaps between LEGO studs so
+        # the whole top surface of a block becomes one solid region.
+        # OPEN then removes any remaining isolated noise smaller than the kernel.
+        close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+        open_kernel  = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  open_kernel)
         
         # Find contours of the masked regions
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > min_area: # Ignore small noise
-                # Compute the boundingbox and center
-                x, y, w, h = cv2.boundingRect(contour)
-                center_x = x + (w // 2)
+            x, y, w, h = cv2.boundingRect(contour)
+            # Filter: must pass area AND minimum dimensions to count as a real block
+            if area < max(min_area, MIN_BLOCK_AREA):
+                continue
+            if w < MIN_BLOCK_W or h < MIN_BLOCK_H:
+                continue
+            center_x = x + (w // 2)
                 
                 detected_blocks.append({
                     'x': center_x,

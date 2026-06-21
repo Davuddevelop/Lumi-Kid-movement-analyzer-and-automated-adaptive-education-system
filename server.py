@@ -423,7 +423,7 @@ async def vision_analyze(req: VisionRequest):
         if frame is None:
             return {"commands": [], "blocks": [], "error": "Could not decode image"}
 
-        commands, blocks = detect_and_sort_blocks(frame, min_area=400)
+        commands, blocks = detect_and_sort_blocks(frame, min_area=1500)
 
         # Serialize blocks without the raw contour (not JSON-serializable)
         safe_blocks = [
