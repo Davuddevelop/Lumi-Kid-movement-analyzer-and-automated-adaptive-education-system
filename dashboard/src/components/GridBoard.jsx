@@ -3,19 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 const CONFETTI = ['⭐', '✨', '💫', '🎉', '🌟', '🎊'];
 const CONFETTI_COUNT = 18;
 
-// Deterministic obstacle variety so same cell always gets same emoji
-const OBSTACLE_EMOJIS = ['🪨', '🌲', '🌵', '🍄', '🪵', '🌊', '🗿', '🌴'];
-function obstacleEmoji(x, y) {
-  return OBSTACLE_EMOJIS[(x * 7 + y * 13) % OBSTACLE_EMOJIS.length];
-}
-
-// Sparse ground decorations on ~14% of empty cells
-const DECO_EMOJIS = ['🌿', '🌸', '🌼', '🍀', '🌾', '🌺', '🦋', '🌻'];
-function cellDeco(x, y) {
-  const h = (x * 17 + y * 31 + x * y * 3) % 100;
-  if (h < 14) return DECO_EMOJIS[h % DECO_EMOJIS.length];
-  return null;
-}
 
 /**
  * GridBoard — game grid with animated robot.
@@ -110,27 +97,16 @@ const GridBoard = ({
               const pathIdx = path.findIndex(p => p.x === x && p.y === y);
               const isPath  = pathIdx !== -1 && !isGoal && !isObstacle;
 
-              const isEmpty    = !isGoal && !isObstacle && !isPath && !isStart;
-              const deco       = isEmpty ? cellDeco(x, y) : null;
-
               return (
                 <div key={`${x}-${y}`} className="grid-cell">
                   {isGoal && (
                     <div className="grid-cell-goal" aria-label="Goal">⭐</div>
-                  )}
-                  {isObstacle && (
-                    <div className="grid-cell-obstacle" aria-label="Obstacle">
-                      {obstacleEmoji(x, y)}
-                    </div>
                   )}
                   {isPath && (
                     <div
                       className="grid-cell-path"
                       style={{ animationDelay: `${pathIdx * 0.06}s` }}
                     />
-                  )}
-                  {deco && (
-                    <span className="grid-cell-deco" aria-hidden="true">{deco}</span>
                   )}
                 </div>
               );

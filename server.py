@@ -76,7 +76,7 @@ class RobotState:
         self.start_pos = {"x": 1, "y": 4}
         self.robot_pos = {"x": 1, "y": 4}
         self.goal = {"x": 6, "y": 4}
-        self.obstacles = [{"x": 3, "y": 4}, {"x": 4, "y": 4}]
+        self.obstacles = []
         self.path = []
         self.vitals = {"joy": 85, "focus": 40}
         self.sentiment = "curiosity"
