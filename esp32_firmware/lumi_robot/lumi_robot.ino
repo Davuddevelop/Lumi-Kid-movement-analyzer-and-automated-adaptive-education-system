@@ -96,9 +96,11 @@ bool executing     = false;
 bool registered    = false;
 unsigned long lastTelemetry = 0;
 
-// PWM channels
+// PWM channels (used by ESP32 core 2.x; core 3.x assigns channels per-pin)
 #define CH_L 0
 #define CH_R 1
+#define PWM_FREQ 20000   // 20 kHz PWM frequency
+#define PWM_RES  8       // 8-bit resolution (0-255)
 
 // ── Encoder ISRs ───────────────────────────────────────────────
 void IRAM_ATTR isrEncL() { encL++; }
@@ -109,14 +111,22 @@ void motorLeft(int pwm) {
     bool fwd = pwm >= 0;
     digitalWrite(MOTOR_L_IN1, fwd ? HIGH : LOW);
     digitalWrite(MOTOR_L_IN2, fwd ? LOW  : HIGH);
-    ledcWrite(CH_L, abs(pwm));
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+    ledcWrite(MOTOR_L_PWM, abs(pwm));   // core 3.x: write to pin
+#else
+    ledcWrite(CH_L, abs(pwm));          // core 2.x: write to channel
+#endif
 }
 
 void motorRight(int pwm) {
     bool fwd = pwm >= 0;
     digitalWrite(MOTOR_R_IN1, fwd ? HIGH : LOW);
     digitalWrite(MOTOR_R_IN2, fwd ? LOW  : HIGH);
-    ledcWrite(CH_R, abs(pwm));
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+    ledcWrite(MOTOR_R_PWM, abs(pwm));   // core 3.x: write to pin
+#else
+    ledcWrite(CH_R, abs(pwm));          // core 2.x: write to channel
+#endif
 }
 
 void motorStop() {
@@ -469,8 +479,15 @@ void setup() {
     // Motor pins
     pinMode(MOTOR_L_IN1, OUTPUT); pinMode(MOTOR_L_IN2, OUTPUT);
     pinMode(MOTOR_R_IN1, OUTPUT); pinMode(MOTOR_R_IN2, OUTPUT);
-    ledcSetup(CH_L, 20000, 8); ledcAttachPin(MOTOR_L_PWM, CH_L);
-    ledcSetup(CH_R, 20000, 8); ledcAttachPin(MOTOR_R_PWM, CH_R);
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+    // core 3.x: ledcAttach(pin, freq, resolution) — channel assigned automatically
+    ledcAttach(MOTOR_L_PWM, PWM_FREQ, PWM_RES);
+    ledcAttach(MOTOR_R_PWM, PWM_FREQ, PWM_RES);
+#else
+    // core 2.x: set up channel, then attach pin to channel
+    ledcSetup(CH_L, PWM_FREQ, PWM_RES); ledcAttachPin(MOTOR_L_PWM, CH_L);
+    ledcSetup(CH_R, PWM_FREQ, PWM_RES); ledcAttachPin(MOTOR_R_PWM, CH_R);
+#endif
     motorStop();
 
     // Encoders
