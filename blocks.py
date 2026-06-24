@@ -6,10 +6,10 @@
 #   RED block   = backward (move robot one cell back)
 
 BLOCKS = {
-    'forward': {
+    'turn_right': {
         'color': 'black',
-        'description': 'Move the robot one step forward.',
-        'icon': 'ArrowUp'
+        'description': 'Turn the robot 90° to the right.',
+        'icon': 'RotateCw'
     },
     'backward': {
         'color': 'red',
